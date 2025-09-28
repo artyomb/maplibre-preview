@@ -1,0 +1,9 @@
+# gem maplibre-preview
+
+This gem allows ...
+
+```ruby
+require 'maplibre-preview'
+
+Sinatra.register MapLibrePreview
+```
