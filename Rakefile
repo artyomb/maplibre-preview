@@ -38,7 +38,7 @@ task build: %i[readme] do |t|
 end
 
 desc 'Build&push new version'
-task push: %i[readme] do |t|
+task push: %i[spec] do |t|
   puts 'Build&push new version'
   gemspec = Dir['*.gemspec'].first
   system "gem build #{gemspec}" or exit 1
