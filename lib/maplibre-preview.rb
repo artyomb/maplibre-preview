@@ -45,6 +45,7 @@ module MapLibrePreview
     def self.registered(app)
       app.helpers Helpers
       app.use StaticMiddleware
+      app.set :maplibre_preview_options, {}
     end
   end
 
@@ -92,7 +93,7 @@ module MapLibrePreview
     end
 
     get '/map' do
-      slim :map, layout: :map_layout
+      slim :map, layout: :map_layout, locals: { options: {} }
     end
 
     private
