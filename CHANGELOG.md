@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0] - 2025-10-01
+
+### Refactored
+- **Simplified architecture** with streamlined Sinatra extension pattern
+- **Consolidated code** into single `lib/maplibre-preview.rb` file
+- **Removed helper methods** in favor of direct Slim template calls
+- **Updated template names** to `maplibre_map` and `maplibre_layout` to avoid conflicts
+- **Streamlined Sinatra extension** with prepend modules for static assets and templates
+
+### Technical Changes
+- **Removed StaticMiddleware** in favor of prepend-based static asset serving
+- **Removed Helpers module** with helper methods
+- **Direct route integration** using `slim :maplibre_map, layout: :maplibre_layout`
+- **Simplified file structure** with all core functionality in main file
+- **Improved template resolution** using `__dir__` context for gem paths
+
 ## [1.0.0] - 2025-09-29
 
 ### Added

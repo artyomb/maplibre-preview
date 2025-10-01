@@ -2,7 +2,7 @@
 
 require 'sinatra/base'
 require 'slim'
-require 'rack'
+require_relative 'maplibre-preview/version'
 
 module MapLibrePreview
   # Fixed versions for guaranteed compatibility
@@ -10,72 +10,36 @@ module MapLibrePreview
   CONTOUR_VERSION = '0.1.0'
   D3_VERSION = '7'
 
-  # Rack middleware for serving static JS files from gem
-  class StaticMiddleware
-    def initialize(app)
-      @app = app
-      @gem_public_path = File.expand_path('maplibre-preview/public', __dir__)
-    end
-
-    def call(env)
-      request = Rack::Request.new(env)
-
-      if request.path.match?(%r{^/js/})
-        serve_js_file(request.path)
-      else
-        @app.call(env)
-      end
-    end
-
-    private
-
-    def serve_js_file(path)
-      file_path = File.join(@gem_public_path, path)
-
-      if File.exist?(file_path) && File.file?(file_path)
-        [200, {'Content-Type' => 'application/javascript'}, [File.read(file_path)]]
-      else
-        [404, {'Content-Type' => 'text/plain'}, ['File not found']]
-      end
-    end
-  end
-
   # Sinatra extension for map development tools
   module Extension
+    module AddPublic
+      def static!(options={})
+        super
+        path = File.expand_path "#{__dir__}/maplibre-preview/public/#{Sinatra::Base::URI_INSTANCE.unescape(request.path_info)}"
+        return unless File.file?(path)
+
+        env['sinatra.static_file'] = path
+        cache_control(*settings.static_cache_control) if settings.static_cache_control?
+        send_file path, options.merge(disposition: nil)
+      end
+    end
+
+    module FindTemplate
+      def find_template(views, name, engine, &block)
+        super
+        yield File.expand_path "#{__dir__}/maplibre-preview/views/#{name}.#{@preferred_extension}"
+      end
+    end
+
     def self.registered(app)
-      app.helpers Helpers
-      app.use StaticMiddleware
+      Sinatra::Templates.prepend FindTemplate
+      Sinatra::Base.prepend AddPublic
+      app.set :static, true
       app.set :maplibre_preview_options, {}
-    end
-  end
 
-  # Helper methods for map development tools
-  module Helpers
-    def render_maplibre_preview
-      gem_views_path = File.expand_path('maplibre-preview/views', __dir__)
-      original_views = settings.views
-      settings.set :views, gem_views_path
-      slim(:map, layout: :map_layout)
-    ensure
-      settings.set :views, original_views
-    end
-
-    def render_map_layout
-      gem_views_path = File.expand_path('maplibre-preview/views', __dir__)
-      original_views = settings.views
-
-      settings.set :views, gem_views_path
-      slim(:map_layout)
-    ensure
-      settings.set :views, original_views
-    end
-
-    def style_url
-      params[:style_url]
-    end
-
-    def should_show_map?
-      !!(params[:style] || params[:style_url] || params[:source])
+      app.get '/maplibre_preview' do
+        slim :maplibre_map, layout: :maplibre_layout
+      end
     end
   end
 
@@ -93,7 +57,7 @@ module MapLibrePreview
     end
 
     get '/map' do
-      slim :map, layout: :map_layout, locals: { options: {} }
+      slim :maplibre_map, layout: :maplibre_layout, locals: { options: {} }
     end
 
     private

@@ -58,7 +58,7 @@ class MyApp < Sinatra::Base
   register MapLibrePreview::Extension
   
   get '/map' do
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -76,7 +76,7 @@ http://localhost:9292/map?style_url=https://example.com/style.json
 ```ruby
 get '/map' do
   params[:style_url] = 'https://example.com/style.json'
-  render_maplibre_preview
+  slim :maplibre_map, layout: :maplibre_layout
 end
 ```
 
@@ -134,14 +134,14 @@ Gem использует фиксированные настройки:
 register MapLibrePreview::Extension
 ```
 
-### Вспомогательные методы
+### Интеграция шаблонов
 
-| Метод | Описание | Параметры |
-|-------|----------|-----------|
-| `render_maplibre_preview` | Рендеринг полного интерфейса разработки карт | Нет |
-| `render_map_layout` | Рендеринг только макета карты | Нет |
-| `style_url` | Получение текущего URL стиля из параметров | Нет |
-| `should_show_map?` | Проверка, должна ли отображаться карта | Нет |
+Gem предоставляет Slim шаблоны, которые можно использовать напрямую в маршрутах:
+
+| Шаблон | Описание | Использование |
+|--------|----------|---------------|
+| `maplibre_map` | Основной шаблон интерфейса карты | `slim :maplibre_map, layout: :maplibre_layout` |
+| `maplibre_layout` | HTML макет с внешними зависимостями | Используется как макет для шаблона карты |
 
 ### Автономное приложение
 
@@ -270,7 +270,7 @@ class MyApp < Sinatra::Base
   register MapLibrePreview::Extension
   
   get '/map' do
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -283,7 +283,7 @@ class MyApp < Sinatra::Base
   
   get '/map' do
     # URL стиля передается через params[:style_url]
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -296,13 +296,13 @@ class MyApp < Sinatra::Base
   
   get '/map' do
     # Использует params[:style_url] если предоставлен
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
   
   get '/terrain' do
     # Устанавливаем URL стиля через params
     params[:style_url] = 'https://example.com/terrain-style.json'
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```

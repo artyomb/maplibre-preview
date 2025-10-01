@@ -58,7 +58,7 @@ class MyApp < Sinatra::Base
   register MapLibrePreview::Extension
   
   get '/map' do
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -76,7 +76,7 @@ http://localhost:9292/map?style_url=https://example.com/style.json
 ```ruby
 get '/map' do
   params[:style_url] = 'https://example.com/style.json'
-  render_maplibre_preview
+  slim :maplibre_map, layout: :maplibre_layout
 end
 ```
 
@@ -134,14 +134,14 @@ The gem uses fixed configurations for optimal compatibility:
 register MapLibrePreview::Extension
 ```
 
-### Helper Methods
+### Template Integration
 
-| Method | Description | Parameters |
-|--------|-------------|------------|
-| `render_maplibre_preview` | Render complete map development interface | None |
-| `render_map_layout` | Render map layout only | None |
-| `style_url` | Get current style URL from params | None |
-| `should_show_map?` | Check if map should be displayed | None |
+The gem provides Slim templates that can be used directly in your routes:
+
+| Template | Description | Usage |
+|----------|-------------|-------|
+| `maplibre_map` | Main map interface template | `slim :maplibre_map, layout: :maplibre_layout` |
+| `maplibre_layout` | HTML layout with external dependencies | Used as layout for map template |
 
 ### Standalone Application
 
@@ -270,7 +270,7 @@ class MyApp < Sinatra::Base
   register MapLibrePreview::Extension
   
   get '/map' do
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -283,7 +283,7 @@ class MyApp < Sinatra::Base
   
   get '/map' do
     # Style URL passed via params[:style_url]
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
@@ -296,13 +296,13 @@ class MyApp < Sinatra::Base
   
   get '/map' do
     # Uses params[:style_url] if provided
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
   
   get '/terrain' do
     # Set style URL via params
     params[:style_url] = 'https://example.com/terrain-style.json'
-    render_maplibre_preview
+    slim :maplibre_map, layout: :maplibre_layout
   end
 end
 ```
