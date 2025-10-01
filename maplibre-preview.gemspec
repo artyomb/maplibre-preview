@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/artyomb/maplibre-preview'
-  spec.metadata['changelog_uri'] = 'https://github.com/artyomb/maplibre-preview/blob/main/CHANGELOG.md'
+  spec.metadata['changelog_uri'] = 'https://github.com/artyomb/maplibre-preview/blob/master/CHANGELOG.md'
 
   # Specify which files should be added to the gem when it is released.
   gemspec = File.basename(__FILE__)
