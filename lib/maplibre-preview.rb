@@ -47,7 +47,7 @@ module MapLibrePreview
   class App < Sinatra::Base
     register Extension
 
-    get '/', &->{ slim :maplibre_map, layout: :maplibre_layout }
+    get '/', &->{ slim :maplibre_map, layout: :maplibre_layout, locals: { options: {} } }
   end
 end
 

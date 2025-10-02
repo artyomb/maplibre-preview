@@ -7,7 +7,7 @@ RSpec.describe MapLibrePreview do
     let(:app) { Class.new(MapLibrePreview::App) { set :environment, :test } }
 
     it 'provides complete map development interface' do
-      get '/map'
+      get '/'
       expect(last_response).to be_ok
 
       expect(last_response.body).to include('map-container')
@@ -30,7 +30,7 @@ RSpec.describe MapLibrePreview do
     let(:app) { Class.new(MapLibrePreview::App) { set :environment, :test } }
 
     it 'includes proper external dependencies' do
-      get '/map'
+      get '/'
       body = last_response.body
 
       expect(body).to include('unpkg.com/maplibre-gl')
