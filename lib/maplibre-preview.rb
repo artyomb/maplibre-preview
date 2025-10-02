@@ -47,31 +47,7 @@ module MapLibrePreview
   class App < Sinatra::Base
     register Extension
 
-    configure do
-      set :views, File.expand_path('maplibre-preview/views', __dir__)
-      set :public_folder, File.expand_path('maplibre-preview/public', __dir__)
-    end
-
-    get '/js/:file' do
-      serve_js_file(params[:file])
-    end
-
-    get '/map' do
-      slim :maplibre_map, layout: :maplibre_layout, locals: { options: {} }
-    end
-
-    private
-
-    def serve_js_file(filename)
-      gem_js_path = File.expand_path("maplibre-preview/public/js/#{filename}", __dir__)
-      if File.exist?(gem_js_path)
-        content_type 'application/javascript'
-        File.read(gem_js_path)
-      else
-        status 404
-        'File not found'
-      end
-    end
+    get '/', &->{ slim :maplibre_map, layout: :maplibre_layout }
   end
 end
 
