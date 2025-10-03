@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.4] - 2025-10-03
+
+### Fixed
+- **Terrain elevation correction** for accurate height display in tooltips and profiles
+- **Centralized exaggeration compensation** with `getRealTerrainElevation` function
+
 ## [1.1.0] - 2025-10-01
 
 ### Refactored

@@ -85,6 +85,14 @@ javascript:
 
     const toDomId = (prefix, id) => `${prefix}-${String(id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
+    const getRealTerrainElevation = (lngLat) => {
+        const elevation = map.queryTerrainElevation(lngLat);
+        if (elevation == null) return null;
+        
+        const exaggeration = currentStyle?.terrain?.exaggeration || 1.0;
+        return elevation / exaggeration;
+    };
+
     const showLoading = () => document.getElementById('loading-indicator').style.display = 'block';
     const hideLoading = () => document.getElementById('loading-indicator').style.display = 'none';
 
@@ -322,11 +330,11 @@ javascript:
             features.length > 0 && console.log('Clicked feature:', features[0]);
 
             if (hoverMode === 'click' && currentStyle?.terrain) {
-                const elevation = map.queryTerrainElevation([e.lngLat.lng, e.lngLat.lat]);
-                if (elevation != null) {
+                const realElevation = getRealTerrainElevation([e.lngLat.lng, e.lngLat.lat]);
+                if (realElevation != null) {
                     elevationTooltip && elevationTooltip.style.display === 'block'
                         ? hideElevationTooltip()
-                        : showElevationTooltip(e.originalEvent, elevation);
+                        : showElevationTooltip(e.originalEvent, realElevation);
                 }
             }
         });
@@ -352,8 +360,10 @@ javascript:
             hideElevationTooltip();
 
             if (currentStyle?.terrain) {
-                const elevation = map.queryTerrainElevation([e.lngLat.lng, e.lngLat.lat]);
-                elevation != null && showElevationTooltip(e.originalEvent, elevation);
+                const realElevation = getRealTerrainElevation([e.lngLat.lng, e.lngLat.lat]);
+                if (realElevation != null) {
+                    showElevationTooltip(e.originalEvent, realElevation);
+                }
             }
 
             profileMode && profilePoints.length === 1 && updateTemporaryLine(e.lngLat);
@@ -489,10 +499,10 @@ javascript:
             const t = i / numPoints;
             const lng = start.lng + (end.lng - start.lng) * t;
             const lat = start.lat + (end.lat - start.lat) * t;
-            const elevation = map.queryTerrainElevation([lng, lat]);
+            const realElevation = getRealTerrainElevation([lng, lat]);
             const distance = calculateDistance([start.lng, start.lat], [lng, lat]);
 
-            return {distance, elevation: elevation || 0, coordinates: [lng, lat]};
+            return {distance, elevation: realElevation, coordinates: [lng, lat]};
         });
     };
 
