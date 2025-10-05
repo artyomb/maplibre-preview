@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'maplibre-preview'
+require 'optparse'
+require 'json'
+require 'fileutils'
+
+class MapLibrePreviewCLI
+  PID_FILE = File.join(Dir.home, '.maplibre-preview.pid')
+
+  def initialize
+    @options = { port: 4567, up: false }
+    setup_parser
+  end
+
+  def run
+    @parser.parse!
+
+    unless ARGV.empty?
+      puts "Error: Unknown argument(s): #{ARGV.join(', ')}"
+      puts "Use 'maplibre-preview --help' for available options"
+      exit 1
+    end
+
+    return handle_server_stop if @options[:stop]
+    return handle_already_running if server_running?
+
+    if @options[:up]
+      start_server
+    else
+      puts "MapLibre Preview v#{MapLibrePreview::VERSION}"
+      puts "Use 'maplibre-preview --up' to start the server"
+      puts "Use 'maplibre-preview --help' for more options"
+      exit 0
+    end
+  rescue OptionParser::InvalidOption => e
+    puts "Error: #{e.message}"
+    puts "Use 'maplibre-preview --help' for available options"
+    exit 1
+  rescue Interrupt
+    puts "\nShutting down server"
+    cleanup_server_info
+    exit 0
+  end
+
+  private
+
+  def setup_parser
+    @parser = OptionParser.new do |opts|
+      opts.banner = "MapLibre Preview v#{MapLibrePreview::VERSION}"
+      opts.separator ""
+      opts.separator "Usage: maplibre-preview [OPTIONS]"
+      opts.separator ""
+      opts.separator "Options:"
+
+      opts.on("--up", "Start the server") { @options[:up] = true }
+      opts.on("-p", "--port PORT", Integer, "Port to run on (default: 4567)") { |port| @options[:port] = port }
+      opts.on("--down", "Stop the running server") { @options[:stop] = true }
+      opts.on("-h", "--help", "Show this help message") { puts opts; exit 0 }
+      opts.on("--version", "Show version information") { puts "MapLibre Preview v#{MapLibrePreview::VERSION}"; exit 0 }
+    end
+  end
+
+  def handle_server_stop
+    return puts("No server is currently running") unless server_running?
+
+    puts "Stopping server on port #{server_info&.dig('port')}"
+    kill_server_process ? puts("Server stopped successfully") : puts("Could not stop server automatically")
+    cleanup_server_info
+  end
+
+  def handle_already_running
+    puts "Server already running on port #{server_info&.dig('port')}"
+    puts "Use 'maplibre-preview --down' to stop it first"
+    exit 1
+  end
+
+  def start_server
+    puts "MapLibre Preview v#{MapLibrePreview::VERSION}"
+    puts "Starting server on port #{@options[:port]}"
+    puts "Open: http://localhost:#{@options[:port]}"
+    puts "Press Ctrl+C to stop"
+    puts ""
+
+    save_server_info(@options[:port])
+    MapLibrePreview::App.run!(port: @options[:port], host: '0.0.0.0')
+  end
+
+  def server_running?
+    return false unless File.exist?(PID_FILE)
+
+    process_exists?(server_info&.dig('pid'))
+  rescue
+    cleanup_server_info
+    false
+  end
+
+  def server_info
+    @server_info ||= begin
+                       return nil unless File.exist?(PID_FILE)
+                       JSON.parse(File.read(PID_FILE))
+                     rescue
+                       cleanup_server_info
+                       nil
+                     end
+  end
+
+  def save_server_info(port)
+    server_info = { 'port' => port, 'pid' => Process.pid, 'started_at' => Time.now.to_i }
+    File.write(PID_FILE, JSON.pretty_generate(server_info))
+  end
+
+  def cleanup_server_info
+    File.delete(PID_FILE) if File.exist?(PID_FILE)
+    @server_info = nil
+  end
+
+  def kill_server_process
+    return false unless server_info&.dig('pid')
+
+    pid = server_info['pid']
+    return false unless process_exists?(pid)
+
+    Process.kill('TERM', pid)
+    sleep(1)
+    Process.kill('KILL', pid) if process_exists?(pid)
+    true
+  rescue => e
+    puts "Warning: Could not kill process: #{e.message}"
+    false
+  end
+
+  def process_exists?(pid)
+    return false unless pid
+
+    Process.kill(0, pid)
+    true
+  rescue Errno::ESRCH
+    false
+  end
+end
+
+MapLibrePreviewCLI.new.run

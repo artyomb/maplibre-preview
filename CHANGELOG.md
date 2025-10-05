@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.4] - 2025-10-05
+
+### Added
+- **CLI executable** - completely new `bin/maplibre-preview` command-line interface
+- **Server management commands** with `--up`, `--down`, `--port` options
+- **Help system** with `--help` and `--version` commands
+- **Process management** with PID file tracking and server control
+- **Puma dependency** for reliable server operation
+- **Ruby 3.0+ requirement** for modern Ruby features
+
+### New CLI Features
+- **`maplibre-preview --up`** - start server with default or custom port
+- **`maplibre-preview --up --port 9292`** - start server on specific port
+- **`maplibre-preview --down`** - stop running server
+- **`maplibre-preview --help`** - show usage information
+- **`maplibre-preview --version`** - show version information
+- **Unknown command validation** - proper error messages for invalid arguments
+
 ## [1.1.4] - 2025-10-03
 
 ### Fixed

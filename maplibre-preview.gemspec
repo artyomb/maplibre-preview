@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
     'elevation profiles, and performance monitoring.'
   spec.homepage = 'https://github.com/artyomb/maplibre-preview'
   spec.license = 'MIT'
-  spec.required_ruby_version = '>= 2.7.0'
+  spec.required_ruby_version = '>= 3.0.0'
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/artyomb/maplibre-preview'
@@ -25,14 +25,15 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
-        f.start_with?(*%w[bin/ Gemfile .gitignore])
+        f.start_with?(*%w[Gemfile .gitignore])
     end
   end
-  spec.bindir = 'exe'
-  spec.executables = []
+  spec.bindir = 'bin'
+  spec.executables << 'maplibre-preview'
   spec.require_paths = ['lib']
 
   # Dependencies
+  spec.add_dependency 'puma', '>= 6.0', '< 7.0'
   spec.add_dependency 'rack', '>= 2.0', '< 4.0'
   spec.add_dependency 'sinatra', '>= 2.1', '< 5.0'
   spec.add_dependency 'slim', '>= 4.1', '< 6.0'
