@@ -52,3 +52,9 @@ module MapLibrePreview
 end
 
 Sinatra.register MapLibrePreview::Extension
+
+# Development server startup
+if __FILE__ == $0
+  puts "Starting MapLibre Preview development server..."
+  MapLibrePreview::App.run!(port: 9292, host: '0.0.0.0')
+end

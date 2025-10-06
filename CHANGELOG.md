@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.5] - 2025-10-07
+
+### Added
+- **Development server startup** with `if __FILE__ == $0` pattern for direct gem execution
+- **IntelliJ IDEA integration** support for running gem from source code during development
+
+### Technical Changes
+- **Direct execution support** - gem can now be run directly with `ruby lib/maplibre-preview.rb`
+- **Development workflow improvement** - no need to build gem for testing changes
+- **Port configuration** - development server runs on port 9292 by default
+
 ## [1.2.4] - 2025-10-05
 
 ### Added
