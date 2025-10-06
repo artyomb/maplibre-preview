@@ -34,6 +34,10 @@ ruby:
 #map-container
   #map.map-layer data-style-url="#{style_url}"
 
+  #version-info.version-info
+    span.version-info-title MapLibre Preview 
+    a.version-info-version href="https://github.com/artyomb/maplibre-preview" target="_blank" v#{MapLibrePreview::VERSION}
+
   #performance-panel.performance-overlay
     button.performance-toggle onclick="togglePerformancePanel()" ×
     .performance-content

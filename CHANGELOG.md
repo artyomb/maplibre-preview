@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.6] - 2025-10-07
+
+### Added
+- **Version info panel** in bottom-right corner with gem name and version link to GitHub
+
 ## [1.2.5] - 2025-10-07
 
 ### Added
