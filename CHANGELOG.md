@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.7] - 2025-10-20
+
+### Fixed
+- **Puma dependency conflict** - moved Puma from runtime to development dependencies
+
 ## [1.2.6] - 2025-10-07
 
 ### Added

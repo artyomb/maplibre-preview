@@ -33,13 +33,13 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Dependencies
-  spec.add_dependency 'puma', '>= 6.0', '< 7.0'
   spec.add_dependency 'rack', '>= 2.0', '< 4.0'
   spec.add_dependency 'sinatra', '>= 2.1', '< 5.0'
   spec.add_dependency 'slim', '>= 4.1', '< 6.0'
 
   # Development dependencies
   spec.add_development_dependency 'bundler', '~> 2.0'
+  spec.add_development_dependency 'puma', '>= 6.0', '< 7.0'
   spec.add_development_dependency 'rack-test', '~> 2.0'
   spec.add_development_dependency 'rake', '~> 13.0'
   spec.add_development_dependency 'rspec', '~> 3.10'
