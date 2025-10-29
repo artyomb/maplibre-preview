@@ -118,8 +118,8 @@ This starts a complete web server with:
 
 The gem uses fixed configurations for optimal compatibility:
 
-- **Map Center**: `[35.15, 47.41]`
-- **Initial Zoom**: `2`
+- **Map Center**: `[96.63, 64.81]` (default, can be overridden by style's `center` property)
+- **Initial Zoom**: `2` (default, can be overridden by style's `zoom` property)
 - **Basemap**: OpenStreetMap tiles with 0.8 opacity
 - **Library Versions**: MapLibre GL JS 5.7.3, MapLibre Contour 0.1.0, D3.js 7
 

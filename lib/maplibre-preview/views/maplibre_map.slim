@@ -16,6 +16,7 @@ ruby:
       button.mode-button id="mode-layers" onclick="switchMode(this, 'layers')" Layers
     button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
     button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
+    button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
 
     #filters-panel.control-panel.active
       .control-panel-header
@@ -76,6 +77,7 @@ javascript:
     let hoverMode = 'click';
     let layerStates = {};
     let map = null;
+    let antialiasEnabled = localStorage.getItem('antialiasEnabled') !== 'false';
     let styleLoaded = false, resourcesLoaded = 0, totalResources = 0;
     let tilesLoaded = 0, tilesTotal = 0;
     let currentStyle = null;
@@ -175,15 +177,23 @@ javascript:
         }
     };
 
-    const createMap = (container, style) => new maplibregl.Map({
-        container,
-        style,
-        center: [35.15, 47.41],
-        zoom: 2,
-        attributionControl: false,
-        validateStyle: false,
-        antialias: true
-    });
+    const createMap = (container, style) => {
+        const defaultCenter = [96.637778, 64.811389];
+        const defaultZoom = 2;
+        
+        const center = Array.isArray(style?.center) && style.center.length === 2 ? style.center : defaultCenter;
+        const zoom = typeof style?.zoom === 'number' ? style.zoom : defaultZoom;
+        
+        return new maplibregl.Map({
+            container,
+            style,
+            center,
+            zoom,
+            attributionControl: false,
+            validateStyle: false,
+            antialias: antialiasEnabled
+        });
+    };
 
     const addBasemapToStyle = (originalStyle) => {
         const modifiedStyle = JSON.parse(JSON.stringify(originalStyle));
@@ -389,7 +399,7 @@ javascript:
 
     const setupPerformanceMonitoring = () => {
         [startPerformanceMonitoring, () => requestAnimationFrame(countFrame),
-            updateHoverModeButton, updateBasemapButton].forEach(fn => fn());
+            updateHoverModeButton, updateBasemapButton, updateAntialiasButton].forEach(fn => fn());
     };
 
     const toggleBasemap = () => {
@@ -831,6 +841,20 @@ javascript:
         requestAnimationFrame(countFrame);
     };
 
+    const toggleAntialias = () => {
+        antialiasEnabled = !antialiasEnabled;
+        localStorage.setItem('antialiasEnabled', antialiasEnabled.toString());
+        window.location.reload();
+    };
+
+    const updateAntialiasButton = () => {
+        const btn = document.getElementById('antialias-btn');
+        if (!btn) return;
+        
+        btn.textContent = `Antialias: ${antialiasEnabled ? 'ON' : 'OFF'}`;
+        btn.className = `control-button ${antialiasEnabled ? 'active' : 'inactive'}`;
+    };
+
     window.switchMode = switchMode;
     window.toggleBasemap = toggleBasemap;
     window.toggleHoverMode = toggleHoverMode;
@@ -838,6 +862,7 @@ javascript:
     window.toggleAllLayers = toggleAllLayers;
     window.togglePerformancePanel = togglePerformancePanel;
     window.toggleProfileMode = toggleProfileMode;
+    window.toggleAntialias = toggleAntialias;
     window.hideProfile = hideProfile;
 
     initializeMap();

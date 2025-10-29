@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.7] - 2025-10-29
+
+### Added
+- **Antialias toggle control** - button to enable/disable antialias with localStorage persistence and page reload
+- **Style-based initial view** - support for `center` and `zoom` properties from style JSON according to MapLibre Style Spec
+
+### Changed
+- **Default map center** - updated to `[96.63, 64.81]`
+
 ## [1.2.7] - 2025-10-20
 
 ### Fixed
