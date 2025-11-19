@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.9] - 2025-11-19
+
+### Changed
+- **Version info display** - removed service name, kept only version number
+- **Version info styling** - repositioned to bottom-right corner with gray background, compact padding, subtle colors
+
+### Added
+- **Collapsible layer controls panel** - added collapse/expand button with arrow icon for layer controls panel
+
 ## [1.3.7] - 2025-10-29
 
 ### Added
