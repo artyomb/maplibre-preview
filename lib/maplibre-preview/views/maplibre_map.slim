@@ -10,27 +10,30 @@ ruby:
       .progress-fill
 
 - if style_name || external_style_url || options[:style_url]
-  .layer-controls
-    .mode-switcher
-      button.mode-button.active id="mode-filters" onclick="switchMode(this, 'filters')" Filters
-      button.mode-button id="mode-layers" onclick="switchMode(this, 'layers')" Layers
-    button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
-    button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
-    button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
+  .layer-controls-wrapper
+    .layer-controls id="layer-controls"
+      .mode-switcher
+        button.mode-button.active id="mode-filters" onclick="switchMode(this, 'filters')" Filters
+        button.mode-button id="mode-layers" onclick="switchMode(this, 'layers')" Layers
+      button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
+      button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
+      button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
 
-    #filters-panel.control-panel.active
-      .control-panel-header
-        button.control-button onclick="toggleAllFilters()" Toggle All Filters
-        button.control-button onclick="toggleBasemap()" Show/Hide Basemap
-      .control-panel-content
-        #filter-buttons
+      #filters-panel.control-panel.active
+        .control-panel-header
+          button.control-button onclick="toggleAllFilters()" Toggle All Filters
+          button.control-button onclick="toggleBasemap()" Show/Hide Basemap
+        .control-panel-content
+          #filter-buttons
 
-    #layers-panel.control-panel
-      .control-panel-header
-        button.control-button onclick="toggleAllLayers()" Toggle All Layers
-        button.control-button onclick="toggleBasemap()" Show/Hide Basemap
-      .control-panel-content
-        #layer-buttons
+      #layers-panel.control-panel
+        .control-panel-header
+          button.control-button onclick="toggleAllLayers()" Toggle All Layers
+          button.control-button onclick="toggleBasemap()" Show/Hide Basemap
+        .control-panel-content
+          #layer-buttons
+    button.layer-controls-toggle id="layer-controls-toggle" onclick="toggleLayerControls()" title="Collapse/Expand Panel"
+      span.toggle-icon ▶
 
 #map-container
   #map.map-layer data-style-url="#{style_url}"
@@ -855,6 +858,18 @@ javascript:
         btn.className = `control-button ${antialiasEnabled ? 'active' : 'inactive'}`;
     };
 
+    let layerControlsCollapsed = false;
+
+    const toggleLayerControls = () => {
+        const wrapper = document.querySelector('.layer-controls-wrapper');
+        const controls = document.getElementById('layer-controls');
+        if (!wrapper || !controls) return;
+
+        layerControlsCollapsed = !layerControlsCollapsed;
+        controls.classList.toggle('collapsed', layerControlsCollapsed);
+        wrapper.classList.toggle('collapsed', layerControlsCollapsed);
+    };
+
     window.switchMode = switchMode;
     window.toggleBasemap = toggleBasemap;
     window.toggleHoverMode = toggleHoverMode;
@@ -863,6 +878,7 @@ javascript:
     window.togglePerformancePanel = togglePerformancePanel;
     window.toggleProfileMode = toggleProfileMode;
     window.toggleAntialias = toggleAntialias;
+    window.toggleLayerControls = toggleLayerControls;
     window.hideProfile = hideProfile;
 
     initializeMap();

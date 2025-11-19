@@ -154,11 +154,36 @@ html
       | }
       | .controls a { color: #6897bb; text-decoration: none; margin-right: 15px; }
       | .controls a:hover { text-decoration: underline; }
-      | .layer-controls {
+      | .layer-controls-wrapper {
       |   position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 1000;
-      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555; padding: 15px;
+      |   display: flex; align-items: center; gap: 0;
+      | }
+      | .layer-controls {
+      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555; border-right: none; padding: 15px;
       |   border-radius: 4px; color: #a9b7c6; display: flex; flex-direction: column; gap: 6px;
-      |   max-width: 300px; max-height: 80vh;
+      |   max-width: 300px; max-height: 80vh; transition: max-width 0.2s;
+      |   overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); order: 1;
+      | }
+      | .layer-controls.collapsed {
+      |   max-width: 0; padding: 15px 0; border: none; opacity: 0; pointer-events: none;
+      | }
+      | .layer-controls-toggle {
+      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555;
+      |   border-left: none; border-radius: 0 4px 4px 0; padding: 8px 4px;
+      |   color: #a9b7c6; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      |   width: 18px; height: auto; min-height: 60px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); order: 2;
+      | }
+      | .layer-controls-toggle:hover {
+      |   background: rgba(75, 77, 79, 0.95); color: #ffc66d; border-color: #666666;
+      | }
+      | .layer-controls-wrapper.collapsed .layer-controls-toggle {
+      |   order: 0; border-left: 1px solid #555555; border-right: 1px solid #555555; border-radius: 4px;
+      | }
+      | .layer-controls-wrapper.collapsed .toggle-icon {
+      |   transform: rotate(180deg);
+      | }
+      | .toggle-icon {
+      |   font-size: 12px; font-weight: bold; transition: transform 0.2s;
       | }
       | .mode-switcher {
       |   display: flex; gap: 2px; margin-bottom: 10px; background: #3c3f41;
