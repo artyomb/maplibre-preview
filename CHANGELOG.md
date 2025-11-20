@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.10] - 2025-11-19
+
+### Changed
+- **Panel styling** - unified background, transparency and edge attachment for all panels
+- **Toggle buttons** - changed arrow directions, replaced performance panel close button with collapse
+- **Performance panel** - partial collapse mode showing only FPS and Memory
+
 ## [1.3.9] - 2025-11-19
 
 ### Changed

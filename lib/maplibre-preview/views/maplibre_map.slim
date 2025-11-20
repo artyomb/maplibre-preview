@@ -33,7 +33,7 @@ ruby:
         .control-panel-content
           #layer-buttons
     button.layer-controls-toggle id="layer-controls-toggle" onclick="toggleLayerControls()" title="Collapse/Expand Panel"
-      span.toggle-icon ▶
+      span.toggle-icon ◀
 
 #map-container
   #map.map-layer data-style-url="#{style_url}"
@@ -42,9 +42,8 @@ ruby:
     a.version-info-version href="https://github.com/artyomb/maplibre-preview" target="_blank" v#{MapLibrePreview::VERSION}
 
   #performance-panel.performance-overlay
-    button.performance-toggle onclick="togglePerformancePanel()" ×
     .performance-content
-      .metric-row
+      .metric-row.performance-main-metrics
         .metric
           span.metric-label FPS:
           span.metric-value#fps-value 0
@@ -57,7 +56,7 @@ ruby:
         .metric
           span.metric-label Zoom:
           span.metric-value#zoom-level-value 0
-      .metric-row
+      .metric-row.performance-secondary-metrics
         .metric
           span.metric-label Tiles:
           span.metric-value#tiles-loaded-value 0
@@ -71,6 +70,8 @@ ruby:
         .metric
           span.metric-label Terrain:
           span.metric-value#terrain-status-value -
+      button.performance-toggle onclick="togglePerformancePanel()" title="Collapse/Expand Panel"
+        span.performance-toggle-icon ◀
 
 javascript:
     const mapEl = document.getElementById('map');
@@ -744,12 +745,12 @@ javascript:
 
     let fpsCounter = 0, lastFpsTime = 0, frameCount = 0;
     let performanceMonitor = null;
-    let performancePanelVisible = true;
+    let performancePanelCollapsed = false;
 
     const togglePerformancePanel = () => {
         const panel = document.getElementById('performance-panel');
-        performancePanelVisible = !performancePanelVisible;
-        panel.style.display = performancePanelVisible ? 'block' : 'none';
+        performancePanelCollapsed = !performancePanelCollapsed;
+        panel.classList.toggle('collapsed', performancePanelCollapsed);
     };
 
     const startPerformanceMonitoring = () => {

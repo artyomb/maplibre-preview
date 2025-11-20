@@ -106,23 +106,40 @@ html
       | .success-message { color: #6a9955; font-size: 12px; margin-top: 4px; }
       | .performance-overlay {
       |   position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 1000;
-      |   background: rgba(43, 43, 43, 0.95); border: 1px solid #555555;
-      |   border-radius: 0 0 6px 6px; padding: 0; min-width: 400px;
-      |   backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      |   transition: all 0.3s ease;
+      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555;
+      |   border-top: none; border-radius: 0 0 4px 4px; padding: 0; width: fit-content;
+      |   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: all 0.3s ease;
       | }
       | .performance-toggle {
-      |   position: absolute; top: 4px; right: 4px; z-index: 1001;
+      |   position: absolute; top: 0; right: 0; bottom: 0; z-index: 1001;
       |   background: none; border: none; color: #808080; cursor: pointer;
-      |   font-size: 14px; padding: 0; width: 16px; height: 16px;
+      |   font-size: 12px; padding: 0; width: 24px; height: 100%;
       |   display: flex; align-items: center; justify-content: center;
-      |   border-radius: 2px; transition: all 0.2s ease;
+      |   border-radius: 0 0 4px 0; transition: all 0.2s ease;
       | }
       | .performance-toggle:hover {
       |   background: #4b4d4f; color: #a9b7c6;
       | }
+      | .performance-toggle-icon {
+      |   font-size: 12px; font-weight: bold; transition: transform 0.2s;
+      |   display: flex; align-items: center; justify-content: center;
+      | }
+      | .performance-overlay.collapsed .performance-toggle-icon {
+      |   transform: rotate(180deg);
+      | }
       | .performance-content {
-      |   padding: 8px 12px;
+      |   padding: 8px 32px 8px 12px; position: relative;
+      | }
+      | .performance-overlay.collapsed .performance-secondary-metrics,
+      | .performance-overlay.collapsed #terrain-row {
+      |   display: none;
+      | }
+      | .performance-overlay.collapsed .performance-main-metrics .metric {
+      |   flex: 0 1 auto;
+      | }
+      | .performance-overlay.collapsed .performance-main-metrics .metric:nth-child(2),
+      | .performance-overlay.collapsed .performance-main-metrics .metric:nth-child(4) {
+      |   display: none;
       | }
       | .metric-row {
       |   display: flex; justify-content: space-between; align-items: center;
@@ -298,10 +315,14 @@ html
       | /* MapLibre Controls */
       | .maplibregl-ctrl-scale, .maplibregl-ctrl-group, .maplibregl-ctrl-terrain, .maplibregl-ctrl-globe {
       |   background: rgba(60, 63, 65, 0.95) !important; border: 1px solid #555555 !important;
-      |   border-radius: 4px !important; backdrop-filter: blur(10px) !important;
-      |   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+      |   border-radius: 4px !important;
       | }
-      | .maplibregl-ctrl-scale { color: rgb(100, 185, 61) !important; font-size: 11px !important; padding: 4px 8px !important; }
+      | .maplibregl-ctrl-scale {
+      |   color: #a9b7c6 !important; font-size: 11px !important; padding: 4px 8px !important;
+      |   border-bottom: none !important; border-left: none !important;
+      |   border-radius: 0 4px 0 0 !important;
+      |   margin: 0 !important;
+      | }
       | .maplibregl-ctrl-scale-line { background: #6897bb !important; border: 1px solid #7aa8cc !important; }
       | .maplibregl-ctrl-group button { background: rgba(75, 105, 61, 0.8) !important; border: 1px solid rgba(72, 139, 92, 0.4) !important; color: #ffffff !important; font-size: 14px !important; font-weight: bold !important; transition: all 0.2s ease !important; }
       | .maplibregl-ctrl-group button:hover { background: rgba(255, 198, 109, 0.9) !important; border-color: #ffd87d !important; color: #2b2b2b !important; transform: scale(1.05) !important; }
@@ -351,8 +372,8 @@ html
       | .profile-tooltip-text { text-anchor: middle; fill: #ff0000; font-size: 14px; }
       | .version-info {
       |   position: fixed; bottom: 0; right: 0; z-index: 1000;
-      |   background: rgba(60, 63, 65, 0.85); border: none; border-radius: 4px 0 0 0;
-      |   padding: 4px 8px; backdrop-filter: blur(5px);
+      |   background: rgba(60, 63, 65, 0.95); border: none; border-radius: 4px 0 0 0;
+      |   padding: 4px 8px;
       |   line-height: 1.2; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
       | }
       | .version-info-version {
