@@ -11,6 +11,7 @@ html
     script[src="https://d3js.org/d3.v#{MapLibrePreview::D3_VERSION}.min.js"]
     script[src='/js/filters.js']
     script[src='/js/contour.js']
+    script[src='/js/tilegrid.js']
     style
       | * { margin: 0; padding: 0; box-sizing: border-box; }
       | html { height: 100%; }
@@ -384,6 +385,62 @@ html
       | }
       | .version-info-version:hover {
       |   color: #a9b7c6; text-decoration: none;
+      | }
+      | /* TileGrid Panel Styles */
+      | .tilegrid-panel {
+      |   position: fixed; top: 50%; right: 10px; transform: translateY(-50%); z-index: 1000;
+      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555;
+      |   border-radius: 4px; padding: 12px; width: 200px;
+      |   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      | }
+      | .tilegrid-header {
+      |   display: flex; justify-content: space-between; align-items: center;
+      |   margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #555555;
+      | }
+      | .tilegrid-title {
+      |   color: #ffc66d; font-weight: bold; font-size: 12px;
+      | }
+      | .tilegrid-close {
+      |   background: none; border: none; color: #808080; cursor: pointer;
+      |   font-size: 14px; padding: 0; width: 16px; height: 16px;
+      |   display: flex; align-items: center; justify-content: center;
+      |   border-radius: 2px; transition: all 0.2s ease;
+      | }
+      | .tilegrid-close:hover {
+      |   background: #4b4d4f; color: #a9b7c6;
+      | }
+      | .tilegrid-stats {
+      |   margin-bottom: 12px; padding: 10px; background: #313335; border-radius: 3px;
+      |   border: 1px solid #464749;
+      | }
+      | .tilegrid-stat-label {
+      |   color: #808080; font-size: 10px; font-weight: 500; letter-spacing: 0.5px;
+      |   text-transform: uppercase; margin-bottom: 4px;
+      | }
+      | .tilegrid-stat-value {
+      |   color: #6897bb; font-size: 28px; font-weight: bold; line-height: 1;
+      |   font-family: 'Courier New', monospace;
+      | }
+      | .tilegrid-controls {
+      |   padding-top: 8px; border-top: 1px solid #555555;
+      | }
+      | .tilegrid-checkbox-label {
+      |   display: flex; align-items: center; justify-content: space-between;
+      |   cursor: pointer; user-select: none; color: #a9b7c6; font-size: 11px;
+      | }
+      | .tilegrid-checkbox-label input[type="checkbox"] {
+      |   display: none;
+      | }
+      | .tilegrid-checkbox-custom {
+      |   width: 16px; height: 16px; border: 1px solid #555555; border-radius: 2px;
+      |   display: flex; align-items: center; justify-content: center;
+      |   transition: all 0.2s ease; background: #3c3f41;
+      | }
+      | .tilegrid-checkbox-label input[type="checkbox"]:checked + .tilegrid-checkbox-custom {
+      |   background: #6a9955; border-color: #7bb366;
+      | }
+      | .tilegrid-checkbox-label input[type="checkbox"]:checked + .tilegrid-checkbox-custom::after {
+      |   content: '✓'; color: white; font-size: 10px; font-weight: bold;
       | }
   body
     .container

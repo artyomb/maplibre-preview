@@ -18,6 +18,7 @@ ruby:
       button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
       button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
       button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
+      button.control-button onclick="toggleTileGrid()" id="tilegrid-mode-btn" Tile Grid
 
       #filters-panel.control-panel.active
         .control-panel-header
@@ -91,6 +92,7 @@ javascript:
     let profileLine = null;
     let currentProfile = null;
     let contourManager = null;
+    let tileGridManager = null;
 
     const toDomId = (prefix, id) => `${prefix}-${String(id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
@@ -305,6 +307,16 @@ javascript:
         contourManager.init();
     };
 
+    const initializeTileGridManager = () => {
+        tileGridManager = new TileGridManager({map});
+        tileGridManager.init();
+        window.tileGridManager = tileGridManager;
+    };
+
+    const toggleTileGrid = () => {
+        tileGridManager?.toggle();
+    };
+
     const onStyleReady = () => {
         const hasTerrain = currentStyle?.terrain;
         const projectionType = hasTerrain ? 'mercator' : 'globe';
@@ -330,6 +342,7 @@ javascript:
             initializeContourManager();
         }
 
+        initializeTileGridManager();
         updateTerrainIndicator();
     };
 
@@ -880,5 +893,7 @@ javascript:
     window.toggleAntialias = toggleAntialias;
     window.toggleLayerControls = toggleLayerControls;
     window.hideProfile = hideProfile;
+    window.toggleTileGrid = toggleTileGrid;
+    window.tileGridManager = null;
 
     initializeMap();

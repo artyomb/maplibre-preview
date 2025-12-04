@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0] - 2025-12-04
+
+### Added
+- **Tile Grid visualization** - TileGridManager class for displaying tile boundaries and statistics
+- **Tile count tracking** - real-time count of loaded tiles with fallback estimation
+- **Tile Grid panel** - UI panel showing number of loaded tiles with toggle for tile borders
+- **Tile Grid button** - control button in layer controls to show/hide tile grid visualization
+
+### Technical Changes
+- **tilegrid.js** - new JavaScript module for tile grid management
+- **MapLibre showTileBoundaries integration** - uses native debug feature for tile boundary visualization
+- **Internal API tile counting** - attempts to count tiles via sourceCaches with fallback estimation
+
 ## [1.3.10] - 2025-11-19
 
 ### Changed
