@@ -4,14 +4,15 @@ html
     meta[charset="utf-8"]
     title Map Preview
     meta[name="viewport" content="width=device-width, initial-scale=1.0"]
-    link[rel="icon" type="image/png" href="/icons/favicon.png"]
+    - base_path = request.script_name
+    link[rel="icon" type="image/png" href="#{base_path}/icons/favicon.png"]
     link[href="https://unpkg.com/maplibre-gl@#{MapLibrePreview::MAPLIBRE_VERSION}/dist/maplibre-gl.css" rel='stylesheet']
     script[src="https://unpkg.com/maplibre-gl@#{MapLibrePreview::MAPLIBRE_VERSION}/dist/maplibre-gl.js"]
     script[src="https://unpkg.com/maplibre-contour@#{MapLibrePreview::CONTOUR_VERSION}/dist/index.min.js"]
     script[src="https://d3js.org/d3.v#{MapLibrePreview::D3_VERSION}.min.js"]
-    script[src='/js/filters.js']
-    script[src='/js/contour.js']
-    script[src='/js/tilegrid.js']
+    script[src="#{base_path}/js/filters.js"]
+    script[src="#{base_path}/js/contour.js"]
+    script[src="#{base_path}/js/tilegrid.js"]
     style
       | * { margin: 0; padding: 0; box-sizing: border-box; }
       | html { height: 100%; }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.4.1] - 2025-12-17
+
+### Fixed
+- **Static assets paths** - fixed paths to favicon and JS files to support non-root application mounting using `request.script_name`
+
 ## [1.4.0] - 2025-12-04
 
 ### Added
