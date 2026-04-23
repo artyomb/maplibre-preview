@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
 
   # Dependencies
   spec.add_dependency 'rack', '>= 2.0', '< 4.0'
+  spec.add_dependency 'rackup', '>= 1.0', '< 3.0'
   spec.add_dependency 'sinatra', '>= 2.1', '< 5.0'
   spec.add_dependency 'slim', '>= 4.1', '< 6.0'
 

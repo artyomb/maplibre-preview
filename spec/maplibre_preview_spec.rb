@@ -17,25 +17,36 @@ RSpec.describe MapLibrePreview do
     end
 
     it 'serves all required JavaScript modules' do
-      %w[filters.js contour.js].each do |js_file|
-        get "/js/#{js_file}"
+      %w[/js/filters.js /js/contour.js /js/tilegrid.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
+        get js_file
         expect(last_response).to be_ok
         expect(last_response.content_type).to include('javascript')
         expect(last_response.body).not_to be_empty
       end
     end
+
+    it 'serves required stylesheets' do
+      get '/vendor/maplibre-gl/maplibre-gl.css'
+
+      expect(last_response).to be_ok
+      expect(last_response.content_type).to include('text/css')
+      expect(last_response.body).not_to be_empty
+    end
   end
 
-  describe 'External dependencies' do
+  describe 'Bundled frontend assets' do
     let(:app) { Class.new(MapLibrePreview::App) { set :environment, :test } }
 
-    it 'includes proper external dependencies' do
+    it 'includes local frontend asset paths' do
       get '/'
       body = last_response.body
 
-      expect(body).to include('unpkg.com/maplibre-gl')
-      expect(body).to include('unpkg.com/maplibre-contour')
-      expect(body).to include('d3js.org/d3')
+      expect(body).to include('/vendor/maplibre-gl/maplibre-gl.css')
+      expect(body).to include('/vendor/maplibre-gl/maplibre-gl.js')
+      expect(body).to include('/vendor/maplibre-contour/index.min.js')
+      expect(body).to include('/vendor/d3/d3.v7.min.js')
+      expect(body).not_to include('unpkg.com')
+      expect(body).not_to include('d3js.org')
     end
   end
 

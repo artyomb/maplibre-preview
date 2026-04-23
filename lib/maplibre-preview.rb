@@ -5,11 +5,6 @@ require 'slim'
 require_relative 'maplibre-preview/version'
 
 module MapLibrePreview
-  # Fixed versions for guaranteed compatibility
-  MAPLIBRE_VERSION = '5.7.3'
-  CONTOUR_VERSION = '0.1.0'
-  D3_VERSION = '7'
-
   # Sinatra extension for map development tools
   module Extension
     module AddPublic

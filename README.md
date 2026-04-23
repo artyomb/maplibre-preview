@@ -30,7 +30,7 @@ The gem consists of several integrated components:
 
 1. **Sinatra Integration** → Register extension → Configure options → Use helpers
 2. **Asset Serving** → StaticMiddleware intercepts `/js/*` requests → Serves from gem
-3. **Map Rendering** → Helper methods render Slim templates → Include external dependencies
+3. **Map Rendering** → Helper methods render Slim templates → Include bundled frontend assets
 4. **Client Interaction** → JavaScript modules handle filtering and terrain features
 
 ## Quick Start
@@ -141,7 +141,7 @@ The gem provides Slim templates that can be used directly in your routes:
 | Template | Description | Usage |
 |----------|-------------|-------|
 | `maplibre_map` | Main map interface template | `slim :maplibre_map, layout: :maplibre_layout` |
-| `maplibre_layout` | HTML layout with external dependencies | Used as layout for map template |
+| `maplibre_layout` | HTML layout with bundled frontend assets | Used as layout for map template |
 
 ### Standalone Application
 

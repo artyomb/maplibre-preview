@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.2] - 2026-04-23
+
+### Changed
+- **Bundled frontend libraries** - vendored MapLibre GL JS, MapLibre Contour, and D3 into gem public assets
+- **Offline-safe UI assets** - replaced CDN references with local `/vendor/...` asset paths served by the gem
+
 ## [1.4.1] - 2025-12-17
 
 ### Fixed
