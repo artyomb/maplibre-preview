@@ -16,6 +16,18 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('d3')
     end
 
+    it 'renders map cache toggle wiring' do
+      get '/?style_url=https://example.com/style.json'
+      expect(last_response).to be_ok
+
+      expect(last_response.body).to include('id="map-cache-btn"')
+      expect(last_response.body).to include('mapCacheDisabled')
+      expect(last_response.body).to include("cache: 'no-store'")
+      expect(last_response.body).to include('cache-off')
+      expect(last_response.body).to include('transformRequest')
+      expect(last_response.body).to include('window.toggleMapCache')
+    end
+
     it 'serves all required JavaScript modules' do
       %w[/js/filters.js /js/contour.js /js/tilegrid.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
         get js_file

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.5.0] - 2026-05-13
+
+### Added
+- **Map request cache toggle** - added a development mode that disables browser HTTP cache for style and MapLibre resource requests
+
 ## [1.4.4] - 2026-05-13
 
 ### Fixed
