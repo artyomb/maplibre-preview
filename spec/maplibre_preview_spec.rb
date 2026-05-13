@@ -20,12 +20,20 @@ RSpec.describe MapLibrePreview do
       get '/?style_url=https://example.com/style.json'
       expect(last_response).to be_ok
 
+      expect(last_response.body).to include('Map Settings')
+      expect(last_response.body).to include('Style Controls')
+      expect(last_response.body).to include('id="settings-mode-switcher"')
+      expect(last_response.body).to include('id="style-mode-switcher"')
+      expect(last_response.body).to include('id="map-settings-toggle"')
+      expect(last_response.body).to include('id="style-controls-toggle"')
+      expect(last_response.body).to include('toggleControlSection')
       expect(last_response.body).to include('id="map-cache-btn"')
       expect(last_response.body).to include('mapCacheDisabled')
       expect(last_response.body).to include("cache: 'no-store'")
       expect(last_response.body).to include('cache-off')
       expect(last_response.body).to include('transformRequest')
       expect(last_response.body).to include('window.toggleMapCache')
+      expect(last_response.body).to include('window.switchSettingsMode')
     end
 
     it 'serves all required JavaScript modules' do

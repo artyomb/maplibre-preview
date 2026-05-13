@@ -12,30 +12,54 @@ ruby:
 - if style_name || external_style_url || options[:style_url]
   .layer-controls-wrapper
     .layer-controls id="layer-controls"
-      .mode-switcher
-        button.mode-button.active id="mode-filters" onclick="switchMode(this, 'filters')" Filters
-        button.mode-button id="mode-layers" onclick="switchMode(this, 'layers')" Layers
-      button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
-      button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
-      button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
-      button.control-button onclick="toggleMapCache()" id="map-cache-btn" Cache
-      button.control-button onclick="toggleTileGrid()" id="tilegrid-mode-btn" Tile Grid
+      .control-section-wrapper.map-settings-wrapper id="map-settings-wrapper"
+        .control-section.map-settings-section id="map-settings-section"
+          .control-section-header
+            .control-section-title Map Settings
+            button.control-section-toggle-inline id="map-settings-toggle-inline" onclick="toggleControlSection('map-settings')" title="Expand Map Settings"
+              span.toggle-icon ▶
+          .control-section-body
+            .mode-switcher id="settings-mode-switcher"
+              button.mode-button.active id="settings-mode-view" onclick="switchSettingsMode(this, 'view')" View
+              button.mode-button id="settings-mode-debug" onclick="switchSettingsMode(this, 'debug')" Debug
 
-      #filters-panel.control-panel.active
-        .control-panel-header
-          button.control-button onclick="toggleAllFilters()" Toggle All Filters
-          button.control-button onclick="toggleBasemap()" Show/Hide Basemap
-        .control-panel-content
-          #filter-buttons
+            #settings-view-panel.control-panel.settings-panel.active
+              button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
 
-      #layers-panel.control-panel
-        .control-panel-header
-          button.control-button onclick="toggleAllLayers()" Toggle All Layers
-          button.control-button onclick="toggleBasemap()" Show/Hide Basemap
-        .control-panel-content
-          #layer-buttons
-    button.layer-controls-toggle id="layer-controls-toggle" onclick="toggleLayerControls()" title="Collapse/Expand Panel"
-      span.toggle-icon ◀
+            #settings-debug-panel.control-panel.settings-panel
+              button.control-button onclick="toggleMapCache()" id="map-cache-btn" Cache
+              button.control-button onclick="toggleTileGrid()" id="tilegrid-mode-btn" Tile Grid
+              button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
+              button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
+        button.control-section-toggle-external id="map-settings-toggle" onclick="toggleControlSection('map-settings')" title="Collapse Map Settings"
+          span.toggle-icon ◀
+
+      .control-section-wrapper.style-controls-wrapper id="style-controls-wrapper"
+        .control-section.style-controls-section id="style-controls-section"
+          .control-section-header
+            .control-section-title Style Controls
+            button.control-section-toggle-inline id="style-controls-toggle-inline" onclick="toggleControlSection('style-controls')" title="Expand Style Controls"
+              span.toggle-icon ▶
+          .control-section-body
+            .mode-switcher id="style-mode-switcher"
+              button.mode-button.active id="mode-filters" onclick="switchMode(this, 'filters')" Filters
+              button.mode-button id="mode-layers" onclick="switchMode(this, 'layers')" Layers
+
+            #filters-panel.control-panel.style-panel.active
+              .control-panel-header
+                button.control-button onclick="toggleAllFilters()" Toggle All Filters
+                button.control-button onclick="toggleBasemap()" id="basemap-filters-btn" Show/Hide Basemap
+              .control-panel-content
+                #filter-buttons
+
+            #layers-panel.control-panel.style-panel
+              .control-panel-header
+                button.control-button onclick="toggleAllLayers()" Toggle All Layers
+                button.control-button onclick="toggleBasemap()" id="basemap-layers-btn" Show/Hide Basemap
+              .control-panel-content
+                #layer-buttons
+        button.control-section-toggle-external id="style-controls-toggle" onclick="toggleControlSection('style-controls')" title="Collapse Style Controls"
+          span.toggle-icon ◀
 
 #map-container
   #map.map-layer data-style-url="#{style_url}"
@@ -78,7 +102,7 @@ ruby:
 javascript:
     const mapEl = document.getElementById('map');
     const style_url = mapEl?.dataset?.styleUrl || null;
-    let showBasemapFilters = true, showBasemapLayers = true, currentMode = 'filters';
+    let showBasemap = true, currentMode = 'filters';
     let hoverMode = 'click';
     let layerStates = {};
     let map = null;
@@ -139,7 +163,7 @@ javascript:
         const target = isStringArg ? null : (arg1?.currentTarget || arg1);
         currentMode = mode;
 
-        document.querySelectorAll('.mode-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('#style-mode-switcher .mode-button').forEach(btn => btn.classList.remove('active'));
         (target || document.getElementById(`mode-${mode}`))?.classList.add('active');
 
         document.getElementById('filters-panel').classList.toggle('active', mode === 'filters');
@@ -148,6 +172,17 @@ javascript:
         mode === 'filters' ? filters?.setMode(mode) : applyLayerMode();
         applyBasemapVisibility();
         updateBasemapButton();
+    };
+
+    const switchSettingsMode = (arg1, arg2) => {
+        const isStringArg = typeof arg1 === 'string';
+        const mode = isStringArg ? arg1 : arg2;
+        const target = isStringArg ? null : (arg1?.currentTarget || arg1);
+        document.querySelectorAll('#settings-mode-switcher .mode-button').forEach(btn => btn.classList.remove('active'));
+        (target || document.getElementById(`settings-mode-${mode}`))?.classList.add('active');
+
+        document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.remove('active'));
+        document.getElementById(`settings-${mode}-panel`)?.classList.add('active');
     };
 
     const applyLayerMode = () => {
@@ -159,8 +194,7 @@ javascript:
     };
 
     const applyBasemapVisibility = () => {
-        const isVisible = currentMode === 'filters' ? showBasemapFilters : showBasemapLayers;
-        map?.getLayer?.('preview-basemap-layer') && map.setLayoutProperty('preview-basemap-layer', 'visibility', isVisible ? 'visible' : 'none');
+        map?.getLayer?.('preview-basemap-layer') && map.setLayoutProperty('preview-basemap-layer', 'visibility', showBasemap ? 'visible' : 'none');
     };
 
     const checkStyleResources = (style) => {
@@ -426,16 +460,15 @@ javascript:
     };
 
     const toggleBasemap = () => {
-        currentMode === 'filters' ? showBasemapFilters = !showBasemapFilters : showBasemapLayers = !showBasemapLayers;
+        showBasemap = !showBasemap;
         applyBasemapVisibility();
         updateBasemapButton();
     };
 
     const updateBasemapButton = () => {
-        const isVisible = currentMode === 'filters' ? showBasemapFilters : showBasemapLayers;
         document.querySelectorAll('button[onclick="toggleBasemap()"]').forEach(btn => {
-            btn.textContent = isVisible ? 'Hide Basemap' : 'Show Basemap';
-            btn.className = `control-button ${isVisible ? 'active' : 'inactive'}`;
+            btn.textContent = showBasemap ? 'Hide Basemap' : 'Show Basemap';
+            btn.className = `control-button ${showBasemap ? 'active' : 'inactive'}`;
         });
     };
 
@@ -711,7 +744,7 @@ javascript:
         });
 
         if (map.getLayer('preview-basemap-layer')) {
-            showBasemapLayers = newState;
+            showBasemap = newState;
         }
 
         updateLayerButtons();
@@ -727,7 +760,7 @@ javascript:
         }
 
         if (layerId === 'preview-basemap-layer') {
-            showBasemapLayers = layerStates[layerId];
+            showBasemap = layerStates[layerId];
             updateBasemapButton();
         }
 
@@ -893,19 +926,23 @@ javascript:
         btn.title = mapCacheDisabled ? 'Browser cache is disabled for map requests' : 'Browser cache is enabled for map requests';
     };
 
-    let layerControlsCollapsed = false;
+    const toggleControlSection = (sectionName) => {
+        const wrapper = document.getElementById(`${sectionName}-wrapper`);
+        const section = document.getElementById(`${sectionName}-section`);
+        const externalToggle = document.getElementById(`${sectionName}-toggle`);
+        const inlineToggle = document.getElementById(`${sectionName}-toggle-inline`);
+        if (!wrapper || !section) return;
 
-    const toggleLayerControls = () => {
-        const wrapper = document.querySelector('.layer-controls-wrapper');
-        const controls = document.getElementById('layer-controls');
-        if (!wrapper || !controls) return;
+        const isCollapsed = section.classList.toggle('collapsed');
+        wrapper.classList.toggle('collapsed', isCollapsed);
 
-        layerControlsCollapsed = !layerControlsCollapsed;
-        controls.classList.toggle('collapsed', layerControlsCollapsed);
-        wrapper.classList.toggle('collapsed', layerControlsCollapsed);
+        const sectionTitle = section.querySelector('.control-section-title')?.textContent || 'section';
+        externalToggle && (externalToggle.title = `Collapse ${sectionTitle}`);
+        inlineToggle && (inlineToggle.title = `Expand ${sectionTitle}`);
     };
 
     window.switchMode = switchMode;
+    window.switchSettingsMode = switchSettingsMode;
     window.toggleBasemap = toggleBasemap;
     window.toggleHoverMode = toggleHoverMode;
     window.toggleAllFilters = () => filters?.toggleAllFilters();
@@ -914,7 +951,8 @@ javascript:
     window.toggleProfileMode = toggleProfileMode;
     window.toggleAntialias = toggleAntialias;
     window.toggleMapCache = toggleMapCache;
-    window.toggleLayerControls = toggleLayerControls;
+    window.toggleControlSection = toggleControlSection;
+    window.toggleLayerControls = () => toggleControlSection('style-controls');
     window.hideProfile = hideProfile;
     window.toggleTileGrid = toggleTileGrid;
     window.tileGridManager = null;

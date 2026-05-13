@@ -175,37 +175,80 @@ html
       | .controls a:hover { text-decoration: underline; }
       | .layer-controls-wrapper {
       |   position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 1000;
-      |   display: flex; align-items: center; gap: 0;
+      |   display: flex; align-items: flex-start; gap: 0;
       | }
       | .layer-controls {
-      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555; border-right: none; padding: 15px;
-      |   border-radius: 4px; color: #a9b7c6; display: flex; flex-direction: column; gap: 6px;
-      |   max-width: 300px; max-height: 80vh; transition: max-width 0.2s;
-      |   overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); order: 1;
+      |   background: transparent; border: none; padding: 0;
+      |   border-radius: 4px; color: #a9b7c6; display: flex; flex-direction: column; gap: 12px;
+      |   width: fit-content; max-width: min(90vw, 420px); max-height: 80vh; transition: max-width 0.2s;
+      |   overflow: hidden; order: 1;
       | }
-      | .layer-controls.collapsed {
-      |   max-width: 0; padding: 15px 0; border: none; opacity: 0; pointer-events: none;
+      | .control-section-wrapper {
+      |   display: flex; align-items: center; width: max-content; max-width: min(90vw, 420px);
       | }
-      | .layer-controls-toggle {
+      | .control-section-wrapper + .control-section-wrapper {
+      |   margin-top: 4px;
+      | }
+      | .control-section {
+      |   display: flex; flex-direction: column; gap: 8px; min-height: 0; width: max-content;
+      |   max-width: min(90vw, 420px);
+      |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555; padding: 12px;
+      |   border-radius: 4px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      | }
+      | .control-section-wrapper:not(.collapsed) .control-section {
+      |   border-right: none; border-radius: 4px 0 0 4px;
+      | }
+      | .control-section.collapsed {
+      |   gap: 0;
+      | }
+      | .control-section-header {
+      |   display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      | }
+      | .control-section-title {
+      |   color: #ffc66d; font-size: 11px; font-weight: bold; line-height: 1.2;
+      |   text-transform: uppercase;
+      | }
+      | .control-section-toggle-external {
       |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555;
       |   border-left: none; border-radius: 0 4px 4px 0; padding: 8px 4px;
       |   color: #a9b7c6; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      |   width: 18px; height: auto; min-height: 60px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); order: 2;
+      |   width: 18px; height: auto; min-height: 60px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); flex-shrink: 0;
       | }
-      | .layer-controls-toggle:hover {
+      | .control-section-toggle-external:hover {
       |   background: rgba(75, 77, 79, 0.95); color: #ffc66d; border-color: #666666;
       | }
-      | .layer-controls-wrapper.collapsed .layer-controls-toggle {
-      |   order: 0; border-left: 1px solid #555555; border-right: 1px solid #555555; border-radius: 4px;
+      | .control-section-wrapper.collapsed .control-section-toggle-external {
+      |   display: none;
       | }
-      | .layer-controls-wrapper.collapsed .toggle-icon {
-      |   transform: rotate(180deg);
+      | .control-section-toggle-inline {
+      |   background: #4b4d4f; color: #a9b7c6; border: 1px solid #555555;
+      |   border-radius: 3px; cursor: pointer; font-size: 10px; line-height: 1;
+      |   padding: 0; width: 22px; height: 22px; transition: all 0.2s ease; flex-shrink: 0;
+      |   display: none; align-items: center; justify-content: center;
+      | }
+      | .control-section-toggle-inline:hover {
+      |   background: #5a5d5f; border-color: #666666;
+      | }
+      | .control-section.collapsed .control-section-toggle-inline {
+      |   display: flex;
       | }
       | .toggle-icon {
       |   font-size: 12px; font-weight: bold; transition: transform 0.2s;
       | }
+      | .control-section-body {
+      |   display: flex; flex-direction: column; gap: 8px; min-height: 0;
+      | }
+      | .control-section.collapsed .control-section-body {
+      |   display: none;
+      | }
+      | .map-settings-section {
+      |   flex-shrink: 0;
+      | }
+      | .style-controls-section {
+      |   overflow: hidden; min-width: 160px; max-height: calc(80vh - 120px);
+      | }
       | .mode-switcher {
-      |   display: flex; gap: 2px; margin-bottom: 10px; background: #3c3f41;
+      |   display: flex; gap: 2px; margin-bottom: 10px; background: #3c3f41; width: 100%;
       |   border-radius: 3px; padding: 2px; flex-shrink: 0;
       | }
       | .mode-button {
@@ -217,6 +260,13 @@ html
       | .control-panel { 
       |   display: none; flex-direction: column; gap: 6px; 
       |   max-height: calc(80vh - 200px); overflow-y: auto;
+      | }
+      | .settings-panel {
+      |   max-height: none; overflow: visible; width: max-content;
+      | }
+      | .style-panel {
+      |   flex: 1; min-height: 0; max-height: calc(80vh - 245px); width: max-content; max-width: 100%;
+      |   overflow: hidden;
       | }
       | .control-panel::-webkit-scrollbar { width: 8px; }
       | .control-panel::-webkit-scrollbar-track { background: #3c3f41; border-radius: 4px; }
@@ -231,12 +281,20 @@ html
       |   display: flex; flex-direction: column; gap: 6px;
       | }
       | .control-panel-content {
-      |   flex: 1; overflow-y: auto;
+      |   flex: 1; min-height: 0; max-height: calc(80vh - 325px); overflow-y: auto;
+      |   width: max-content; max-width: 100%;
+      | }
+      | #filter-buttons, #layer-buttons {
+      |   display: inline-grid; grid-template-columns: max-content; gap: 2px; width: max-content;
+      |   justify-items: stretch;
       | }
       | .control-button {
       |   background: #4b4d4f; color: #a9b7c6; border: 1px solid #555555;
       |   padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px;
-      |   transition: all 0.2s ease; width: 100%; box-sizing: border-box;
+      |   transition: all 0.2s ease; width: 100%; box-sizing: border-box; white-space: nowrap;
+      | }
+      | #filter-buttons .control-button, #layer-buttons .control-button {
+      |   width: 100%; text-align: center;
       | }
       | .control-button:hover { background: #5a5d5f; border-color: #666666; }
       | .control-button.active { background: #6a9955; color: #ffffff; border-color: #7bb366; }

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1] - 2026-05-13
+
+### Changed
+- **Map control layout** - split map settings and style controls into independent panels with separate collapse controls
+- **Panel sizing** - adjusted map settings, filters, and layers panels to size from their visible content
+
+### Fixed
+- **Filter and layer scrolling** - restored internal scrolling for large filter and layer lists after the panel layout split
+
 ## [1.5.0] - 2026-05-13
 
 ### Added
