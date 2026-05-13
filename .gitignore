@@ -13,3 +13,4 @@ Gemfile.lock
 AGENTS.md
 **/.knowledge/
 .codex
+.playwright-mcp
