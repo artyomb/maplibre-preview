@@ -262,7 +262,21 @@ html
       |   max-height: calc(80vh - 200px); overflow-y: auto;
       | }
       | .settings-panel {
-      |   max-height: none; overflow: visible; width: max-content;
+      |   max-height: none; overflow: visible; width: 220px;
+      | }
+      | .setting-group {
+      |   display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px;
+      |   border-bottom: 1px solid #464749;
+      | }
+      | .setting-label {
+      |   display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      |   color: #a9b7c6; font-size: 11px; font-weight: bold;
+      | }
+      | .setting-value {
+      |   color: #6897bb; font-family: 'Courier New', monospace; font-weight: bold;
+      | }
+      | .setting-range {
+      |   width: 100%; accent-color: #6897bb; cursor: pointer;
       | }
       | .style-panel {
       |   flex: 1; min-height: 0; max-height: calc(80vh - 245px); width: max-content; max-width: 100%;

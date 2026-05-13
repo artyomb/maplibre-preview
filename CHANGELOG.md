@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.6.0] - 2026-05-13
+
+### Added
+- **Basemap opacity control** - added a Map Settings slider for changing preview basemap transparency without changing the tested style
+- **Terrain exaggeration control** - added a terrain-only slider that updates `map.setTerrain({ source, exaggeration })`
+- **MapLibre debug controls** - added Collision Boxes, Overdraw, and Raster Fade toggles for label placement, dense style, and raster/DEM diagnostics
+
+### Changed
+- **Tile Boundaries naming** - renamed the Tile Grid UI to Tile Boundaries to clarify that it uses MapLibre `showTileBoundaries`
+- **Map Settings layout** - added compact setting rows and range styling for view-mode map controls
+
 ## [1.5.1] - 2026-05-13
 
 ### Changed

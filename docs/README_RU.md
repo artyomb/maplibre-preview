@@ -125,6 +125,19 @@ Gem использует фиксированные настройки:
 
 **URL стиля**: Передается через параметр URL `?style_url=https://example.com/style.json`
 
+## Настройки карты
+
+Интерфейс preview оставляет только те настройки MapLibre, которые полезны для сервисов тайлов, стилей и рельефа:
+
+- **Basemap opacity**: меняет прозрачность добавленной preview-подложки OpenStreetMap, не меняя тестируемый стиль.
+- **Terrain exaggeration**: появляется для стилей с `terrain` и обновляет `map.setTerrain({ source, exaggeration })`.
+- **Antialias**: перезагружает WebGL context с включенным или выключенным antialiasing.
+- **Cache**: отключает browser cache для style и map requests при проверке свежесгенерированных тайлов/стилей.
+- **Tile Boundaries**: включает MapLibre overlay границ тайлов, включая диагностику координат/зумов тайлов при наклоне карты, и счетчик видимых тайлов.
+- **Collision Boxes**: включает MapLibre symbol collision boxes для отладки подписей и иконок.
+- **Overdraw**: включает MapLibre overdraw inspection для плотных mixed styles и дорогих слоев.
+- **Raster Fade**: включает или выключает fade duration у raster tiles для проверки raster/DEM cache и reconstruction.
+
 ## Справочник API
 
 ### Расширение Sinatra

@@ -24,11 +24,24 @@ ruby:
               button.mode-button id="settings-mode-debug" onclick="switchSettingsMode(this, 'debug')" Debug
 
             #settings-view-panel.control-panel.settings-panel.active
+              .setting-group
+                .setting-label
+                  span Basemap opacity
+                  span.setting-value id="basemap-opacity-value" 80%
+                input.setting-range id="basemap-opacity-slider" type="range" min="0" max="100" step="5" value="80" oninput="setBasemapOpacity(this.value)"
+              .setting-group.terrain-setting id="terrain-exaggeration-setting" style="display: none;"
+                .setting-label
+                  span Terrain exaggeration
+                  span.setting-value id="terrain-exaggeration-value" 1.0x
+                input.setting-range id="terrain-exaggeration-slider" type="range" min="0" max="3" step="0.1" value="1" oninput="setTerrainExaggeration(this.value)"
               button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
 
             #settings-debug-panel.control-panel.settings-panel
               button.control-button onclick="toggleMapCache()" id="map-cache-btn" Cache
-              button.control-button onclick="toggleTileGrid()" id="tilegrid-mode-btn" Tile Grid
+              button.control-button onclick="toggleTileGrid()" id="tilegrid-mode-btn" Tile Boundaries
+              button.control-button onclick="toggleCollisionBoxes()" id="collision-boxes-btn" Collision Boxes
+              button.control-button onclick="toggleOverdrawInspector()" id="overdraw-inspector-btn" Overdraw
+              button.control-button onclick="toggleTileFade()" id="tile-fade-btn" Raster Fade
               button.control-button onclick="toggleHoverMode()" id="hover-mode-btn" Hover Mode
               button.control-button onclick="toggleProfileMode()" id="profile-mode-btn" style="display: none;" Elevation Profile
         button.control-section-toggle-external id="map-settings-toggle" onclick="toggleControlSection('map-settings')" title="Collapse Map Settings"
@@ -108,6 +121,11 @@ javascript:
     let map = null;
     let antialiasEnabled = localStorage.getItem('antialiasEnabled') !== 'false';
     let mapCacheDisabled = localStorage.getItem('mapCacheDisabled') === 'true';
+    let basemapOpacity = Number.parseFloat(localStorage.getItem('basemapOpacity') || '0.8');
+    let terrainExaggeration = Number.parseFloat(localStorage.getItem('terrainExaggeration') || '1');
+    let collisionBoxesEnabled = localStorage.getItem('collisionBoxesEnabled') === 'true';
+    let overdrawInspectorEnabled = localStorage.getItem('overdrawInspectorEnabled') === 'true';
+    let tileFadeEnabled = localStorage.getItem('tileFadeEnabled') !== 'false';
     let styleLoaded = false, resourcesLoaded = 0, totalResources = 0;
     let tilesLoaded = 0, tilesTotal = 0;
     let currentStyle = null;
@@ -122,12 +140,13 @@ javascript:
 
     const toDomId = (prefix, id) => `${prefix}-${String(id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
     const noCacheRequestOptions = () => mapCacheDisabled ? {cache: 'no-store'} : undefined;
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
     const getRealTerrainElevation = (lngLat) => {
         const elevation = map.queryTerrainElevation(lngLat);
         if (elevation == null) return null;
         
-        const exaggeration = currentStyle?.terrain?.exaggeration || 1.0;
+        const exaggeration = terrainExaggeration || currentStyle?.terrain?.exaggeration || 1.0;
         return elevation / exaggeration;
     };
 
@@ -234,6 +253,8 @@ javascript:
             attributionControl: false,
             validateStyle: false,
             antialias: antialiasEnabled,
+            canvasContextAttributes: {antialias: antialiasEnabled},
+            fadeDuration: tileFadeEnabled ? 300 : 0,
             transformRequest: (url) => ({
                 url,
                 ...noCacheRequestOptions()
@@ -263,7 +284,7 @@ javascript:
             type: 'raster',
             source: 'preview-basemap',
             layout: {visibility: 'visible'},
-            paint: {'raster-opacity': 0.8, 'raster-fade-duration': 300}
+            paint: {'raster-opacity': basemapOpacity, 'raster-fade-duration': tileFadeEnabled ? 300 : 0}
         });
 
         return modifiedStyle;
@@ -360,13 +381,7 @@ javascript:
 
     const onStyleReady = () => {
         const hasTerrain = currentStyle?.terrain;
-        const projectionType = hasTerrain ? 'mercator' : 'globe';
-
-        try {
-            map.setProjection({type: projectionType});
-        } catch (e) {
-            console.warn('Projection setting failed:', e);
-        }
+        applyDefaultProjection();
 
         try {
             map.addControl(new maplibregl.GlobeControl(), 'top-right');
@@ -377,14 +392,20 @@ javascript:
         if (currentStyle?.terrain) {
             const terrainSourceName = currentStyle.terrain.source;
             map.addControl(new maplibregl.TerrainControl({
-                source: terrainSourceName
+                source: terrainSourceName,
+                exaggeration: terrainExaggeration
             }), 'top-right');
 
             initializeContourManager();
+            applyTerrainExaggeration();
         }
 
         initializeTileGridManager();
+        applyBasemapOpacity();
+        applyDebugRenderSettings();
+        applyTileFadeSetting();
         updateTerrainIndicator();
+        updateMapSettingsControls();
     };
 
     const setupMapInteractions = () => {
@@ -456,7 +477,8 @@ javascript:
 
     const setupPerformanceMonitoring = () => {
         [startPerformanceMonitoring, () => requestAnimationFrame(countFrame),
-            updateHoverModeButton, updateBasemapButton, updateAntialiasButton, updateMapCacheButton].forEach(fn => fn());
+            updateHoverModeButton, updateBasemapButton, updateAntialiasButton, updateMapCacheButton,
+            updateMapSettingsControls].forEach(fn => fn());
     };
 
     const toggleBasemap = () => {
@@ -476,6 +498,7 @@ javascript:
         const terrainRow = document.getElementById('terrain-row');
         const terrainElement = document.getElementById('terrain-status-value');
         const profileBtn = document.getElementById('profile-mode-btn');
+        const terrainSetting = document.getElementById('terrain-exaggeration-setting');
 
         if (!terrainRow || !terrainElement) return;
 
@@ -485,9 +508,11 @@ javascript:
             terrainElement.textContent = 'is detected';
             terrainElement.className = 'metric-value success';
             profileBtn && (profileBtn.style.display = 'block');
+            terrainSetting && (terrainSetting.style.display = 'flex');
         } else {
             terrainRow.style.display = 'none';
             profileBtn && (profileBtn.style.display = 'none');
+            terrainSetting && (terrainSetting.style.display = 'none');
         }
     };
 
@@ -926,6 +951,133 @@ javascript:
         btn.title = mapCacheDisabled ? 'Browser cache is disabled for map requests' : 'Browser cache is enabled for map requests';
     };
 
+    const getDefaultProjectionType = () => {
+        return currentStyle?.terrain ? 'mercator' : 'globe';
+    };
+
+    const applyDefaultProjection = () => {
+        if (!map) return;
+
+        try {
+            map.setProjection({type: getDefaultProjectionType()});
+        } catch (e) {
+            console.warn('Projection setting failed:', e);
+        }
+    };
+
+    const setBasemapOpacity = (value) => {
+        basemapOpacity = clamp(Number.parseFloat(value) / 100, 0, 1);
+        localStorage.setItem('basemapOpacity', basemapOpacity.toString());
+        applyBasemapOpacity();
+        updateBasemapOpacityControl();
+    };
+
+    const applyBasemapOpacity = () => {
+        if (map?.getLayer?.('preview-basemap-layer')) {
+            map.setPaintProperty('preview-basemap-layer', 'raster-opacity', basemapOpacity);
+        }
+    };
+
+    const updateBasemapOpacityControl = () => {
+        const slider = document.getElementById('basemap-opacity-slider');
+        const value = document.getElementById('basemap-opacity-value');
+        const percent = Math.round(clamp(basemapOpacity, 0, 1) * 100);
+        slider && (slider.value = percent);
+        value && (value.textContent = `${percent}%`);
+    };
+
+    const setTerrainExaggeration = (value) => {
+        terrainExaggeration = clamp(Number.parseFloat(value), 0, 3);
+        localStorage.setItem('terrainExaggeration', terrainExaggeration.toString());
+        applyTerrainExaggeration();
+        updateTerrainExaggerationControl();
+    };
+
+    const applyTerrainExaggeration = () => {
+        if (!map || !currentStyle?.terrain?.source) return;
+
+        try {
+            map.setTerrain({
+                source: currentStyle.terrain.source,
+                exaggeration: terrainExaggeration
+            });
+        } catch (e) {
+            console.warn('Terrain exaggeration setting failed:', e);
+        }
+    };
+
+    const updateTerrainExaggerationControl = () => {
+        const slider = document.getElementById('terrain-exaggeration-slider');
+        const value = document.getElementById('terrain-exaggeration-value');
+        slider && (slider.value = terrainExaggeration);
+        value && (value.textContent = `${terrainExaggeration.toFixed(1)}x`);
+    };
+
+    const toggleCollisionBoxes = () => {
+        collisionBoxesEnabled = !collisionBoxesEnabled;
+        localStorage.setItem('collisionBoxesEnabled', collisionBoxesEnabled.toString());
+        applyDebugRenderSettings();
+        updateDebugRenderButtons();
+    };
+
+    const toggleOverdrawInspector = () => {
+        overdrawInspectorEnabled = !overdrawInspectorEnabled;
+        localStorage.setItem('overdrawInspectorEnabled', overdrawInspectorEnabled.toString());
+        applyDebugRenderSettings();
+        updateDebugRenderButtons();
+    };
+
+    const applyDebugRenderSettings = () => {
+        if (!map) return;
+        map.showCollisionBoxes = collisionBoxesEnabled;
+        map.showOverdrawInspector = overdrawInspectorEnabled;
+    };
+
+    const updateDebugRenderButtons = () => {
+        const collisionBtn = document.getElementById('collision-boxes-btn');
+        const overdrawBtn = document.getElementById('overdraw-inspector-btn');
+        if (collisionBtn) {
+            collisionBtn.textContent = `Collision Boxes: ${collisionBoxesEnabled ? 'ON' : 'OFF'}`;
+            collisionBtn.className = `control-button ${collisionBoxesEnabled ? 'active' : 'inactive'}`;
+        }
+        if (overdrawBtn) {
+            overdrawBtn.textContent = `Overdraw: ${overdrawInspectorEnabled ? 'ON' : 'OFF'}`;
+            overdrawBtn.className = `control-button ${overdrawInspectorEnabled ? 'active' : 'inactive'}`;
+        }
+    };
+
+    const toggleTileFade = () => {
+        tileFadeEnabled = !tileFadeEnabled;
+        localStorage.setItem('tileFadeEnabled', tileFadeEnabled.toString());
+        applyTileFadeSetting();
+        updateTileFadeButton();
+    };
+
+    const applyTileFadeSetting = () => {
+        if (!map?.getStyle()?.layers) return;
+        const fadeDuration = tileFadeEnabled ? 300 : 0;
+
+        map.getStyle().layers.forEach(layer => {
+            if (layer.type === 'raster' && map.getLayer(layer.id)) {
+                map.setPaintProperty(layer.id, 'raster-fade-duration', fadeDuration);
+            }
+        });
+    };
+
+    const updateTileFadeButton = () => {
+        const btn = document.getElementById('tile-fade-btn');
+        if (!btn) return;
+        btn.textContent = `Raster Fade: ${tileFadeEnabled ? 'ON' : 'OFF'}`;
+        btn.className = `control-button ${tileFadeEnabled ? 'active' : 'inactive'}`;
+    };
+
+    const updateMapSettingsControls = () => {
+        updateBasemapOpacityControl();
+        updateTerrainExaggerationControl();
+        updateDebugRenderButtons();
+        updateTileFadeButton();
+    };
+
     const toggleControlSection = (sectionName) => {
         const wrapper = document.getElementById(`${sectionName}-wrapper`);
         const section = document.getElementById(`${sectionName}-section`);
@@ -951,6 +1103,11 @@ javascript:
     window.toggleProfileMode = toggleProfileMode;
     window.toggleAntialias = toggleAntialias;
     window.toggleMapCache = toggleMapCache;
+    window.setBasemapOpacity = setBasemapOpacity;
+    window.setTerrainExaggeration = setTerrainExaggeration;
+    window.toggleCollisionBoxes = toggleCollisionBoxes;
+    window.toggleOverdrawInspector = toggleOverdrawInspector;
+    window.toggleTileFade = toggleTileFade;
     window.toggleControlSection = toggleControlSection;
     window.toggleLayerControls = () => toggleControlSection('style-controls');
     window.hideProfile = hideProfile;

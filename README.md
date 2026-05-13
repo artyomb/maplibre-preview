@@ -125,6 +125,19 @@ The gem uses fixed configurations for optimal compatibility:
 
 **Style URL**: Pass via URL parameter `?style_url=https://example.com/style.json`
 
+## Map Settings
+
+The preview UI keeps focused MapLibre controls that are useful for tile, style, and terrain services:
+
+- **Basemap opacity**: changes the injected OpenStreetMap preview layer opacity while preserving the tested style.
+- **Terrain exaggeration**: appears for styles with `terrain` and updates `map.setTerrain({ source, exaggeration })`.
+- **Antialias**: reloads the WebGL context with antialiasing enabled or disabled.
+- **Cache**: disables browser cache for style and map requests when comparing freshly generated tiles/styles.
+- **Tile Boundaries**: toggles MapLibre tile boundary overlay, including tile coordinate/zoom diagnostics in pitched views, and visible tile count diagnostics.
+- **Collision Boxes**: toggles MapLibre symbol collision boxes for label/icon debugging.
+- **Overdraw**: toggles MapLibre overdraw inspection for dense mixed styles and expensive layers.
+- **Raster Fade**: toggles raster tile fade duration for raster/DEM cache and reconstruction checks.
+
 ## API Reference
 
 ### Sinatra Extension
