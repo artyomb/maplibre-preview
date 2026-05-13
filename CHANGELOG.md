@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.4.4] - 2026-05-13
+
+### Fixed
+- **Filter labels** - normalize object-based localized labels to display `title`, `name`, or `label` instead of `[object Object]`
+
 ## [1.4.2] - 2026-04-23
 
 ### Changed
