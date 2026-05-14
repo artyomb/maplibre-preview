@@ -35,6 +35,7 @@ ruby:
                   span.setting-value id="terrain-exaggeration-value" 1.0x
                 input.setting-range id="terrain-exaggeration-slider" type="range" min="0" max="3" step="0.1" value="1" oninput="setTerrainExaggeration(this.value)"
               button.control-button onclick="toggleAntialias()" id="antialias-btn" Antialias
+              button.control-button onclick="resetOverlayLayout()" id="overlay-layout-reset-btn" Reset window layout
 
             #settings-debug-panel.control-panel.settings-panel
               button.control-button onclick="toggleMapCache()" id="map-cache-btn" Cache
@@ -78,12 +79,13 @@ ruby:
   #map.map-layer data-style-url="#{style_url}"
 
   #style-parameters-panel.style-parameters-overlay.collapsed style="display: none;"
-    button.style-parameters-header type="button" onclick="toggleStyleParametersPanel()" id="style-parameters-toggle" aria-expanded="false"
+    .style-parameters-header
       span.style-parameters-title Style parameters
       span.style-parameters-summary
         span#style-parameters-count 0
         span params
-      span.style-parameters-toggle-icon ▲
+      button.style-parameters-toggle type="button" onclick="toggleStyleParametersPanel()" id="style-parameters-toggle" aria-expanded="false" title="Collapse/Expand Style parameters"
+        span.style-parameters-toggle-icon ▲
     .style-parameters-body
       #style-parameter-fields.style-parameter-fields
       .style-parameter-actions
@@ -150,6 +152,7 @@ javascript:
     let currentProfile = null;
     let contourManager = null;
     let tileGridManager = null;
+    let overlayLayoutManager = null;
     let originalStyle = null;
     let styleParameterDefinitions = new Map();
     let styleParameterValues = {};
@@ -328,6 +331,7 @@ javascript:
         });
 
         layoutBottomOverlays();
+        overlayLayoutManager?.refreshPanel('style-parameters');
     };
 
     const toggleStyleParametersPanel = () => {
@@ -338,6 +342,7 @@ javascript:
         const isCollapsed = panel.classList.toggle('collapsed');
         toggle?.setAttribute('aria-expanded', String(!isCollapsed));
         layoutBottomOverlays();
+        overlayLayoutManager?.refreshPanel('style-parameters');
     };
 
     const initializeStyleParameters = async (style) => {
@@ -392,7 +397,7 @@ javascript:
 
     const patchRequestUrl = (resourceUrl) => shouldPatchRequestUrl(resourceUrl) ? appendStyleParametersToUrl(resourceUrl) : resourceUrl;
 
-    const BOTTOM_OVERLAY_IDS = ['style-parameters-panel', 'loading-indicator', 'profile-overlay'];
+    const BOTTOM_OVERLAY_IDS = ['loading-indicator'];
     const BOTTOM_OVERLAY_BASE_OFFSET = 20;
     const BOTTOM_OVERLAY_GAP = 12;
 
@@ -419,6 +424,69 @@ javascript:
                 element.style.bottom = `${bottomOffset}px`;
                 bottomOffset += element.offsetHeight + BOTTOM_OVERLAY_GAP;
             });
+            overlayLayoutManager?.refreshBounds();
+        });
+    };
+
+    const getSystemReservedBottom = () => {
+        const loading = document.getElementById('loading-indicator');
+        return isVisibleBottomOverlay(loading) ? loading.offsetHeight + BOTTOM_OVERLAY_BASE_OFFSET + BOTTOM_OVERLAY_GAP : 0;
+    };
+
+    const leftControlStackOffset = (sectionName) => {
+        const mapSettings = document.getElementById('map-settings-wrapper');
+        const styleControls = document.getElementById('style-controls-wrapper');
+        const gap = 12;
+        const mapHeight = mapSettings?.getBoundingClientRect().height || mapSettings?.offsetHeight || 0;
+        const styleHeight = styleControls?.getBoundingClientRect().height || styleControls?.offsetHeight || 0;
+
+        return {
+            x: 0,
+            y: sectionName === 'map-settings' ? -((styleHeight + gap) / 2) : ((mapHeight + gap) / 2)
+        };
+    };
+
+    const initializeOverlayLayout = () => {
+        if (!window.OverlayLayoutManager) return;
+
+        overlayLayoutManager?.destroy();
+        overlayLayoutManager = new OverlayLayoutManager({
+            storageKey: 'maplibre-preview:overlay-layout:v3',
+            snapThreshold: 32,
+            mobileBreakpoint: 768,
+            edgeGap: 10,
+            getReservedBounds: () => ({bottom: getSystemReservedBottom()})
+        });
+        window.overlayLayoutManager = overlayLayoutManager;
+        window.resetOverlayLayout = () => overlayLayoutManager.resetLayout();
+
+        overlayLayoutManager.registerPanel({
+            id: 'map-settings',
+            element: '#map-settings-wrapper',
+            handleSelector: '.control-section-title',
+            defaultAnchor: 'top-left',
+            defaultOffset: {x: 0, y: 0}
+        });
+        overlayLayoutManager.registerPanel({
+            id: 'style-controls',
+            element: '#style-controls-wrapper',
+            handleSelector: '.control-section-title',
+            defaultAnchor: 'left',
+            defaultOffset: () => leftControlStackOffset('style-controls')
+        });
+        overlayLayoutManager.registerPanel({
+            id: 'style-parameters',
+            element: '#style-parameters-panel',
+            handleSelector: '.style-parameters-title',
+            defaultAnchor: 'bottom',
+            defaultOffset: {x: 0, y: 0}
+        });
+        overlayLayoutManager.registerPanel({
+            id: 'performance',
+            element: '#performance-panel',
+            handleSelector: '.performance-content',
+            defaultAnchor: 'top',
+            defaultOffset: {x: 0, y: -10}
         });
     };
 
@@ -648,6 +716,7 @@ javascript:
             });
             filters.init();
             createLayerButtons();
+            overlayLayoutManager?.refreshBounds();
         } catch (e) {
             console.warn('Filter initialization failed:', e);
         }
@@ -947,7 +1016,19 @@ javascript:
 
         [header, stats, chart].forEach(el => overlay.appendChild(el));
         document.getElementById('map-container').appendChild(overlay);
-        setTimeout(() => drawSimpleProfileChart(profile), 10);
+        overlayLayoutManager?.registerPanel({
+            id: 'profile',
+            element: overlay,
+            handleSelector: '.profile-title',
+            defaultAnchor: 'bottom',
+            defaultOffset: {x: 0, y: -16},
+            snap: false,
+            lockSizeOnDrag: true
+        });
+        setTimeout(() => {
+            drawSimpleProfileChart(profile);
+            overlayLayoutManager?.refreshPanel('profile');
+        }, 10);
         layoutBottomOverlays();
     };
 
@@ -1025,6 +1106,7 @@ javascript:
     };
 
     const hideProfile = () => {
+        overlayLayoutManager?.unregisterPanel('profile');
         document.getElementById('profile-overlay')?.remove();
         layoutBottomOverlays();
         map.getLayer('profile-line') && (map.removeLayer('profile-line'), map.removeSource('profile-line'));
@@ -1491,4 +1573,5 @@ javascript:
     window.tileGridManager = null;
     window.addEventListener('resize', layoutBottomOverlays);
 
+    initializeOverlayLayout();
     initializeMap();

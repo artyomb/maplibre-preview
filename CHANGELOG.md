@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.8.0] - 2026-05-14
+
+### Added
+- **Movable overlay windows** - added `OverlayLayoutManager` for shared drag, edge clamping, snapping and persisted positions of movable map UI panels
+- **Window layout reset** - added `Reset window layout` action in Map Settings to clear saved panel positions from local storage and restore defaults
+
+### Changed
+- **Panel layout foundation** - moved Map Settings, Style Controls, Style Parameters, Performance, Elevation Profile and Tile Boundaries to the shared overlay layout manager
+- **Default panel positions** - kept static map controls attached to map edges and placed Map Settings in the top-left default position
+
+### Fixed
+- **Overlay visibility** - fixed managed panel z-index so map settings, filter controls and static MapLibre controls remain visible
+- **Elevation profile frame** - fixed profile window positioning and sizing while dragging near the bottom edge
+
 ## [1.7.2] - 2026-05-14
 
 ### Changed

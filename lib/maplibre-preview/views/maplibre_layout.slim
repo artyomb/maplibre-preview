@@ -10,6 +10,7 @@ html
     script[src="#{base_path}/vendor/maplibre-gl/maplibre-gl.js"]
     script[src="#{base_path}/vendor/maplibre-contour/index.min.js"]
     script[src="#{base_path}/vendor/d3/d3.v7.min.js"]
+    script[src="#{base_path}/js/overlay_layout.js"]
     script[src="#{base_path}/js/filters.js"]
     script[src="#{base_path}/js/contour.js"]
     script[src="#{base_path}/js/tilegrid.js"]
@@ -174,7 +175,7 @@ html
       | .controls a { color: #6897bb; text-decoration: none; margin-right: 15px; }
       | .controls a:hover { text-decoration: underline; }
       | .layer-controls-wrapper {
-      |   position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 1000;
+      |   position: static; z-index: 1000;
       |   display: flex; align-items: flex-start; gap: 0;
       | }
       | .layer-controls {
@@ -203,6 +204,22 @@ html
       | }
       | .control-section-header {
       |   display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      | }
+      | .overlay-managed-panel {
+      |   z-index: 1000; will-change: left, top;
+      | }
+      | .overlay-dragging {
+      |   cursor: grabbing;
+      |   user-select: none;
+      |   transition: none !important;
+      | }
+      | .overlay-panel-handle {
+      |   cursor: grab; touch-action: none; user-select: none;
+      |   -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+      | }
+      | .overlay-panel-handle:focus-visible {
+      |   outline: 1px solid #6897bb;
+      |   outline-offset: 2px;
       | }
       | .control-section-title {
       |   color: #ffc66d; font-size: 11px; font-weight: bold; line-height: 1.2;
@@ -330,12 +347,20 @@ html
       |   color: #a9b7c6; overflow: hidden;
       | }
       | .style-parameters-header {
-      |   display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px;
+      |   display: flex; align-items: center; gap: 12px;
       |   width: 100%; background: transparent; color: inherit; border: none;
-      |   padding: 10px 12px; cursor: pointer; text-align: left;
+      |   padding: 10px 12px; text-align: left;
       | }
       | .style-parameters-header:hover {
       |   background: rgba(75, 77, 79, 0.95);
+      | }
+      | .style-parameters-toggle {
+      |   display: inline-flex; align-items: center; justify-content: center;
+      |   width: 22px; height: 22px; background: transparent; color: #a9b7c6;
+      |   border: 1px solid transparent; border-radius: 2px; cursor: pointer;
+      | }
+      | .style-parameters-toggle:hover {
+      |   background: #4b4d4f; border-color: #555555;
       | }
       | .style-parameters-title {
       |   color: #ffc66d; font-size: 11px; font-weight: bold; line-height: 1.2;
@@ -487,6 +512,10 @@ html
       |   transition: width 0.3s ease; width: 0%;
       | }
       | /* MapLibre Controls */
+      | .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right,
+      | .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right {
+      |   z-index: 1000 !important;
+      | }
       | .maplibregl-ctrl-scale, .maplibregl-ctrl-group, .maplibregl-ctrl-terrain, .maplibregl-ctrl-globe {
       |   background: rgba(60, 63, 65, 0.95) !important; border: 1px solid #555555 !important;
       |   border-radius: 4px !important;
@@ -512,10 +541,12 @@ html
       |   background: rgba(60, 63, 65, 0.95); border: 1px solid #555555;
       |   border-radius: 6px; padding: 12px; width: 70vw; max-width: 800px;
       |   backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      |   overflow: hidden;
       | }
       | .profile-header {
-      |   display: flex; justify-content: space-between; align-items: center;
+      |   display: flex; justify-content: flex-start; align-items: center;
       |   margin-bottom: 8px; border-bottom: 1px solid #555555; padding-bottom: 8px;
+      |   gap: 8px;
       | }
       | .profile-title { color: #ffc66d; font-weight: bold; font-size: 12px; }
       | .profile-close {
@@ -523,6 +554,7 @@ html
       |   font-size: 14px; padding: 0; width: 16px; height: 16px;
       |   display: flex; align-items: center; justify-content: center;
       |   border-radius: 2px; transition: all 0.2s ease;
+      |   margin-left: auto;
       | }
       | .profile-close:hover { background: #4b4d4f; color: #a9b7c6; }
       | .profile-stats {
@@ -567,7 +599,7 @@ html
       |   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       | }
       | .tilegrid-header {
-      |   display: flex; justify-content: space-between; align-items: center;
+      |   display: flex; justify-content: flex-start; align-items: center; gap: 8px;
       |   margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #555555;
       | }
       | .tilegrid-title {
@@ -578,6 +610,7 @@ html
       |   font-size: 14px; padding: 0; width: 16px; height: 16px;
       |   display: flex; align-items: center; justify-content: center;
       |   border-radius: 2px; transition: all 0.2s ease;
+      |   margin-left: auto;
       | }
       | .tilegrid-close:hover {
       |   background: #4b4d4f; color: #a9b7c6;

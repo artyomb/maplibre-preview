@@ -14,6 +14,7 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('maplibre-gl')
       expect(last_response.body).to include('maplibre-contour')
       expect(last_response.body).to include('d3')
+      expect(last_response.body).to include('overlay_layout')
     end
 
     it 'renders map cache toggle wiring' do
@@ -38,6 +39,13 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('id="style-parameter-fields"')
       expect(last_response.body).to include('id="style-parameters-apply"')
       expect(last_response.body).to include('id="style-parameters-reset"')
+      expect(last_response.body).to include('OverlayLayoutManager')
+      expect(last_response.body).to include('overlayLayoutManager')
+      expect(last_response.body).to include('resetOverlayLayout')
+      expect(last_response.body).to include('id="overlay-layout-reset-btn"')
+      expect(last_response.body).to include('Reset window layout')
+      expect(last_response.body).to include('maplibre-preview:overlay-layout:v3')
+      expect(last_response.body).not_to include('overlay-panel-dock-actions')
       expect(last_response.body).to include('mapCacheDisabled')
       expect(last_response.body).to include('basemapOpacity')
       expect(last_response.body).to include('terrainExaggeration')
@@ -60,7 +68,7 @@ RSpec.describe MapLibrePreview do
     end
 
     it 'serves all required JavaScript modules' do
-      %w[/js/filters.js /js/contour.js /js/tilegrid.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
+      %w[/js/overlay_layout.js /js/filters.js /js/contour.js /js/tilegrid.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
         get js_file
         expect(last_response).to be_ok
         expect(last_response.content_type).to include('javascript')
@@ -88,6 +96,7 @@ RSpec.describe MapLibrePreview do
       expect(body).to include('/vendor/maplibre-gl/maplibre-gl.js')
       expect(body).to include('/vendor/maplibre-contour/index.min.js')
       expect(body).to include('/vendor/d3/d3.v7.min.js')
+      expect(body).to include('/js/overlay_layout.js')
       expect(body).not_to include('unpkg.com')
       expect(body).not_to include('d3js.org')
     end
