@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.7.2] - 2026-05-14
+
+### Changed
+- **Map settings styling** - rounded all control panel corners and styled range sliders to match the dark UI
+
 ## [1.7.0] - 2026-05-14
 
 ### Added
