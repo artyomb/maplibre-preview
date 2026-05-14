@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.9.0] - 2026-05-14
+
+### Added
+- **Temporal parameter picker** - added a custom calendar and time picker for date/time-like style parameters
+- **Style parameter context** - show source/layer counts and localized usage hints for each detected style parameter
+
+### Changed
+- **Style parameter URL matching** - track source-specific parameterized URL rules and append only the parameters declared for the matching source
+- **Temporal parameter inputs** - use the custom picker for temporal parameters while keeping query values normalized to epoch seconds
+
+### Fixed
+- **Source metadata inspection** - fetch source metadata without pre-appending parameter values so metadata-declared parameters can be discovered reliably
+- **Parameterized tile requests** - removed the broad `/rb_tiles/` heuristic in favor of explicit source metadata and URL prefix matching
+
 ## [1.8.0] - 2026-05-14
 
 ### Added

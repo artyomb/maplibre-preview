@@ -156,7 +156,7 @@ javascript:
     let originalStyle = null;
     let styleParameterDefinitions = new Map();
     let styleParameterValues = {};
-    let parameterizedUrlPrefixes = new Set();
+    let parameterizedUrlRules = [];
 
     const toDomId = (prefix, id) => `${prefix}-${String(id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
     const noCacheRequestOptions = () => mapCacheDisabled ? {cache: 'no-store'} : undefined;
@@ -169,7 +169,8 @@ javascript:
         return [];
     };
 
-    const inferParameterInputType = (name) => /(^|_|-)(time|date|datetime)($|_|-)/i.test(name) ? 'datetime-local' : 'text';
+    const isTemporalParameter = (name) => /(^|_|-)(time|date|datetime)($|_|-)/i.test(name);
+    const inferParameterInputType = (name) => isTemporalParameter(name) ? 'datetime-local' : 'text';
 
     const parameterInputToQueryValue = (name, value) => {
         if (!value) return '';
@@ -211,9 +212,24 @@ javascript:
         return prefix ? new URL(prefix, window.location.href).toString() : null;
     };
 
-    const rememberParameterizedUrl = (template) => {
+    const rememberParameterizedUrl = (template, parameterNames) => {
+        const names = normalizeQueryParams(parameterNames);
+        if (!names.length) return;
+
         const prefix = urlPrefixFromTemplate(template);
-        prefix && parameterizedUrlPrefixes.add(prefix);
+        if (!prefix) return;
+
+        const existing = parameterizedUrlRules.find(rule => rule.prefix === prefix);
+        if (existing) {
+            names.forEach(name => existing.parameterNames.add(name));
+        } else {
+            parameterizedUrlRules.push({prefix, parameterNames: new Set(names)});
+        }
+    };
+
+    const rememberParameterizedSourceUrls = (sourceDef, parameterNames) => {
+        [sourceDef?.url, sourceDef?.meta_url, sourceDef?.data].forEach(url => rememberParameterizedUrl(url, parameterNames));
+        (sourceDef?.tiles || []).forEach(tileUrl => rememberParameterizedUrl(tileUrl, parameterNames));
     };
 
     const appendStyleParametersToUrl = (resourceUrl, values = styleParameterValues, parameterNames = Object.keys(values)) => {
@@ -242,16 +258,13 @@ javascript:
             const params = sourceDeclaredParameters(sourceDef);
             params.forEach(name => mergeStyleParameterDefinition(name, sourceName));
 
-            if (params.length) {
-                [sourceDef.url, sourceDef.meta_url, sourceDef.data].forEach(rememberParameterizedUrl);
-                (sourceDef.tiles || []).forEach(rememberParameterizedUrl);
-            }
+            rememberParameterizedSourceUrls(sourceDef, params);
         });
     };
 
     const fetchSourceMetadata = async (url) => {
         try {
-            const response = await fetch(appendStyleParametersToUrl(url), noCacheRequestOptions());
+            const response = await fetch(url, noCacheRequestOptions());
             return response.ok ? response.json() : null;
         } catch (e) {
             console.warn('Could not inspect source metadata:', url, e);
@@ -272,7 +285,9 @@ javascript:
 
                 const params = normalizeQueryParams(metadata.query_params || metadata.queryParams);
                 params.forEach(name => mergeStyleParameterDefinition(name, sourceName));
-                (metadata.tiles || []).forEach(rememberParameterizedUrl);
+                const parameterNames = getSourceParameterNames(sourceName, sourceDef);
+                rememberParameterizedSourceUrls(sourceDef, parameterNames);
+                (metadata.tiles || []).forEach(tileUrl => rememberParameterizedUrl(tileUrl, parameterNames));
             }
         }));
     };
@@ -297,6 +312,53 @@ javascript:
         return values;
     };
 
+    const normalizeLocalizedLabel = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') return value.title || value.name || value.label || null;
+        return String(value);
+    };
+
+    const getLocalizedMetadataLabel = (id, style = originalStyle) => {
+        const locale = style?.metadata?.locale;
+        if (!locale || !id) return id;
+
+        for (const lang of ['en-US', 'en', 'ru']) {
+            const label = normalizeLocalizedLabel(locale[lang]?.[id]);
+            if (label) return label;
+        }
+
+        for (const lang in locale) {
+            const label = normalizeLocalizedLabel(locale[lang]?.[id]);
+            if (label) return label;
+        }
+
+        return id;
+    };
+
+    const compactList = (items, limit = 3) => {
+        const unique = [...new Set(items.filter(Boolean))];
+        return unique.length > limit
+            ? `${unique.slice(0, limit).join(', ')} +${unique.length - limit}`
+            : unique.join(', ');
+    };
+
+    const getStyleParameterContext = (definition) => {
+        const style = originalStyle || currentStyle;
+        const sources = [...definition.sources].sort();
+        const layers = (style?.layers || []).filter(layer => sources.includes(layer.source));
+        const filterIds = [...new Set(layers.map(layer => layer.metadata?.filter_id).filter(Boolean))].sort();
+        const filterLabels = filterIds.map(id => getLocalizedMetadataLabel(id, style));
+
+        return {
+            sources,
+            layers: layers.map(layer => layer.id).sort(),
+            filterLabels: filterLabels.length ? filterLabels : sources,
+            sourceSummary: compactList(sources),
+            filterSummary: compactList(filterLabels.length ? filterLabels : sources)
+        };
+    };
+
     const renderStyleParameterControls = () => {
         const panel = document.getElementById('style-parameters-panel');
         const fields = document.getElementById('style-parameter-fields');
@@ -309,24 +371,79 @@ javascript:
         fields.innerHTML = '';
 
         definitions.forEach(definition => {
-            const row = document.createElement('label');
+            const row = document.createElement('div');
             row.className = 'style-parameter-row';
-            row.htmlFor = `style-param-${definition.name}`;
+            const context = getStyleParameterContext(definition);
 
-            const label = document.createElement('span');
+            const header = document.createElement('div');
+            header.className = 'style-parameter-header';
+            const label = document.createElement('label');
             label.className = 'style-parameter-label';
+            label.htmlFor = `style-param-${definition.name}`;
             label.textContent = definition.name;
+            const counts = document.createElement('span');
+            counts.className = 'style-parameter-counts';
+            counts.textContent = `${context.sources.length} src / ${context.layers.length} lyr`;
+            counts.title = `${context.sources.length} sources, ${context.layers.length} layers`;
+            header.appendChild(label);
+            header.appendChild(counts);
 
             const input = document.createElement('input');
             input.className = 'style-parameter-input';
             input.id = `style-param-${definition.name}`;
-            input.type = inferParameterInputType(definition.name);
+            input.type = isTemporalParameter(definition.name) ? 'text' : inferParameterInputType(definition.name);
             input.value = queryValueToParameterInput(definition.name, styleParameterValues[definition.name]);
             input.dataset.parameterName = definition.name;
-            input.title = [...definition.sources].join(', ');
+            input.title = [
+                `Sources: ${context.sources.join(', ')}`,
+                `Layers: ${context.layers.join(', ')}`
+            ].join('\n');
+            if (isTemporalParameter(definition.name)) {
+                input.classList.add('temporal');
+                input.readOnly = true;
+                input.placeholder = 'Select date and time';
+                input.setAttribute('aria-haspopup', 'dialog');
+                input.addEventListener('click', () => window.TemporalPicker.open(input));
+                input.addEventListener('focus', () => window.TemporalPicker.open(input));
+                input.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        window.TemporalPicker.open(input);
+                    }
+                });
+            }
 
-            row.appendChild(label);
-            row.appendChild(input);
+            const parameterControl = document.createElement('div');
+            parameterControl.className = isTemporalParameter(definition.name)
+                ? 'style-parameter-input-group temporal'
+                : 'style-parameter-input-group';
+            parameterControl.appendChild(input);
+
+            const contextBlock = document.createElement('div');
+            contextBlock.className = 'style-parameter-context';
+            contextBlock.title = input.title;
+
+            const usedBy = document.createElement('span');
+            usedBy.className = 'style-parameter-context-row';
+            const usedByKey = document.createElement('span');
+            usedByKey.className = 'style-parameter-context-key';
+            usedByKey.textContent = 'Used by';
+            usedBy.appendChild(usedByKey);
+            usedBy.appendChild(document.createTextNode(` ${context.filterSummary || 'No linked layers'}`));
+            contextBlock.appendChild(usedBy);
+
+            const sourceInfo = document.createElement('span');
+            sourceInfo.className = 'style-parameter-context-row';
+            const sourceKey = document.createElement('span');
+            sourceKey.className = 'style-parameter-context-key';
+            sourceKey.textContent = 'Sources';
+            sourceInfo.appendChild(sourceKey);
+            sourceInfo.appendChild(document.createTextNode(` ${context.sourceSummary || 'None'}`));
+            contextBlock.appendChild(sourceInfo);
+
+            row.appendChild(header);
+            row.appendChild(parameterControl);
+            row.appendChild(contextBlock);
             fields.appendChild(row);
         });
 
@@ -348,7 +465,7 @@ javascript:
     const initializeStyleParameters = async (style) => {
         styleParameterDefinitions = new Map();
         styleParameterValues = {};
-        parameterizedUrlPrefixes = new Set();
+        parameterizedUrlRules = [];
 
         collectStyleSourceParameters(style);
         styleParameterDefinitions.forEach((definition, name) => {
@@ -389,13 +506,25 @@ javascript:
         return modifiedStyle;
     };
 
-    const shouldPatchRequestUrl = (resourceUrl) => {
-        if (!Object.values(styleParameterValues).some(value => value !== undefined && value !== null && value !== '')) return false;
+    const parameterizedUrlRuleFor = (resourceUrl) => {
         const absolute = new URL(resourceUrl, window.location.href).toString();
-        return absolute.includes('/rb_tiles/') || [...parameterizedUrlPrefixes].some(prefix => absolute.startsWith(prefix));
+        return parameterizedUrlRules
+            .filter(rule => absolute.startsWith(rule.prefix))
+            .sort((a, b) => b.prefix.length - a.prefix.length)[0] || null;
     };
 
-    const patchRequestUrl = (resourceUrl) => shouldPatchRequestUrl(resourceUrl) ? appendStyleParametersToUrl(resourceUrl) : resourceUrl;
+    const patchRequestUrl = (resourceUrl) => {
+        const rule = parameterizedUrlRuleFor(resourceUrl);
+        if (!rule) return resourceUrl;
+
+        const parameterNames = [...rule.parameterNames];
+        if (!parameterNames.some(name => {
+            const value = styleParameterValues[name];
+            return value !== undefined && value !== null && value !== '';
+        })) return resourceUrl;
+
+        return appendStyleParametersToUrl(resourceUrl, styleParameterValues, parameterNames);
+    };
 
     const BOTTOM_OVERLAY_IDS = ['loading-indicator'];
     const BOTTOM_OVERLAY_BASE_OFFSET = 20;

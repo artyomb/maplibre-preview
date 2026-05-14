@@ -7,6 +7,7 @@ html
     - base_path = request.script_name
     link[rel="icon" type="image/png" href="#{base_path}/icons/favicon.png"]
     link[href="#{base_path}/vendor/maplibre-gl/maplibre-gl.css" rel='stylesheet']
+    link[href="#{base_path}/css/temporal_picker.css" rel='stylesheet']
     script[src="#{base_path}/vendor/maplibre-gl/maplibre-gl.js"]
     script[src="#{base_path}/vendor/maplibre-contour/index.min.js"]
     script[src="#{base_path}/vendor/d3/d3.v7.min.js"]
@@ -14,6 +15,7 @@ html
     script[src="#{base_path}/js/filters.js"]
     script[src="#{base_path}/js/contour.js"]
     script[src="#{base_path}/js/tilegrid.js"]
+    script[src="#{base_path}/js/temporal_picker.js"]
     style
       | * { margin: 0; padding: 0; box-sizing: border-box; }
       | html { height: 100%; }
@@ -387,16 +389,43 @@ html
       | .style-parameter-row {
       |   display: flex; flex-direction: column; gap: 4px;
       | }
+      | .style-parameter-header {
+      |   display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      | }
       | .style-parameter-label {
       |   color: #808080; font-size: 10px; font-weight: bold;
       |   text-transform: uppercase;
       | }
+      | .style-parameter-counts {
+      |   color: #6897bb; font-family: 'Courier New', monospace; font-size: 10px;
+      |   white-space: nowrap;
+      | }
+      | .style-parameter-input-group {
+      |   display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px;
+      | }
+      | .style-parameter-input-group.temporal {
+      |   grid-template-columns: minmax(0, 1fr);
+      | }
       | .style-parameter-input {
       |   width: 100%; background: #313335; color: #a9b7c6; border: 1px solid #555555;
       |   border-radius: 3px; padding: 6px 8px; font-size: 11px; box-sizing: border-box;
+      |   color-scheme: dark;
       | }
       | .style-parameter-input:focus {
       |   outline: none; border-color: #6897bb; box-shadow: 0 0 0 1px #6897bb;
+      | }
+      | .style-parameter-input.temporal {
+      |   font-family: 'Courier New', monospace; font-size: 11px; cursor: pointer;
+      | }
+      | .style-parameter-context {
+      |   display: flex; flex-direction: column; gap: 2px;
+      |   color: #999999; font-size: 10px; line-height: 1.25;
+      | }
+      | .style-parameter-context-row {
+      |   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      | }
+      | .style-parameter-context-key {
+      |   color: #808080; text-transform: uppercase; margin-right: 4px;
       | }
       | .style-parameter-actions {
       |   display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
@@ -405,13 +434,18 @@ html
       |   flex: 1; min-height: 0; max-height: calc(80vh - 245px); width: max-content; max-width: 100%;
       |   overflow: hidden;
       | }
-      | .control-panel::-webkit-scrollbar { width: 8px; }
-      | .control-panel::-webkit-scrollbar-track { background: #3c3f41; border-radius: 4px; }
-      | .control-panel::-webkit-scrollbar-thumb { 
+      | .control-panel::-webkit-scrollbar,
+      | .style-parameters-body::-webkit-scrollbar { width: 8px; }
+      | .control-panel::-webkit-scrollbar-track,
+      | .style-parameters-body::-webkit-scrollbar-track { background: #3c3f41; border-radius: 4px; }
+      | .control-panel::-webkit-scrollbar-thumb,
+      | .style-parameters-body::-webkit-scrollbar-thumb { 
       |   background: #555555; border-radius: 4px; border: 1px solid #3c3f41;
       | }
-      | .control-panel::-webkit-scrollbar-thumb:hover { background: #666666; }
-      | .control-panel { scrollbar-width: thin; scrollbar-color: #555555 #3c3f41; }
+      | .control-panel::-webkit-scrollbar-thumb:hover,
+      | .style-parameters-body::-webkit-scrollbar-thumb:hover { background: #666666; }
+      | .control-panel,
+      | .style-parameters-body { scrollbar-width: thin; scrollbar-color: #555555 #3c3f41; }
       | .control-panel.active { display: flex; }
       | .control-panel-header {
       |   flex-shrink: 0; border-bottom: 1px solid #555555; padding-bottom: 8px; margin-bottom: 8px;

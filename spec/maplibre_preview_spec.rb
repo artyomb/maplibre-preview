@@ -50,9 +50,23 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('basemapOpacity')
       expect(last_response.body).to include('terrainExaggeration')
       expect(last_response.body).to include('styleParameterDefinitions')
+      expect(last_response.body).to include('parameterizedUrlRules')
       expect(last_response.body).to include('sourceDeclaredParameters')
       expect(last_response.body).to include('collectSourceMetadataParameters')
       expect(last_response.body).to include('applyStyleParametersToStyle')
+      expect(last_response.body).to include('rememberParameterizedSourceUrls')
+      expect(last_response.body).to include('parameterizedUrlRuleFor')
+      expect(last_response.body).to include('getStyleParameterContext')
+      expect(last_response.body).to include('isTemporalParameter')
+      expect(last_response.body).to include('/css/temporal_picker.css')
+      expect(last_response.body).to include('/js/temporal_picker.js')
+      expect(last_response.body).to include('window.TemporalPicker.open')
+      expect(last_response.body).to include('style-parameter-input-group')
+      expect(last_response.body).to include('style-parameter-counts')
+      expect(last_response.body).to include('style-parameter-context')
+      expect(last_response.body).to include('Used by')
+      expect(last_response.body).to include('Sources:')
+      expect(last_response.body).not_to include("absolute.includes('/rb_tiles/')")
       expect(last_response.body).to include('layoutBottomOverlays')
       expect(last_response.body).to include('showCollisionBoxes')
       expect(last_response.body).to include('showOverdrawInspector')
@@ -68,7 +82,7 @@ RSpec.describe MapLibrePreview do
     end
 
     it 'serves all required JavaScript modules' do
-      %w[/js/overlay_layout.js /js/filters.js /js/contour.js /js/tilegrid.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
+      %w[/js/overlay_layout.js /js/filters.js /js/contour.js /js/tilegrid.js /js/temporal_picker.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
         get js_file
         expect(last_response).to be_ok
         expect(last_response.content_type).to include('javascript')
@@ -77,11 +91,13 @@ RSpec.describe MapLibrePreview do
     end
 
     it 'serves required stylesheets' do
-      get '/vendor/maplibre-gl/maplibre-gl.css'
+      %w[/vendor/maplibre-gl/maplibre-gl.css /css/temporal_picker.css].each do |css_file|
+        get css_file
 
-      expect(last_response).to be_ok
-      expect(last_response.content_type).to include('text/css')
-      expect(last_response.body).not_to be_empty
+        expect(last_response).to be_ok
+        expect(last_response.content_type).to include('text/css')
+        expect(last_response.body).not_to be_empty
+      end
     end
   end
 
@@ -93,10 +109,12 @@ RSpec.describe MapLibrePreview do
       body = last_response.body
 
       expect(body).to include('/vendor/maplibre-gl/maplibre-gl.css')
+      expect(body).to include('/css/temporal_picker.css')
       expect(body).to include('/vendor/maplibre-gl/maplibre-gl.js')
       expect(body).to include('/vendor/maplibre-contour/index.min.js')
       expect(body).to include('/vendor/d3/d3.v7.min.js')
       expect(body).to include('/js/overlay_layout.js')
+      expect(body).to include('/js/temporal_picker.js')
       expect(body).not_to include('unpkg.com')
       expect(body).not_to include('d3js.org')
     end
