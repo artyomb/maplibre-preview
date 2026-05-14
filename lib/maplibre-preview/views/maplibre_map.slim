@@ -77,6 +77,19 @@ ruby:
 #map-container
   #map.map-layer data-style-url="#{style_url}"
 
+  #style-parameters-panel.style-parameters-overlay.collapsed style="display: none;"
+    button.style-parameters-header type="button" onclick="toggleStyleParametersPanel()" id="style-parameters-toggle" aria-expanded="false"
+      span.style-parameters-title Style parameters
+      span.style-parameters-summary
+        span#style-parameters-count 0
+        span params
+      span.style-parameters-toggle-icon ▲
+    .style-parameters-body
+      #style-parameter-fields.style-parameter-fields
+      .style-parameter-actions
+        button.control-button type="button" onclick="applyStyleParameters()" id="style-parameters-apply" Apply
+        button.control-button type="button" onclick="resetStyleParameters()" id="style-parameters-reset" Reset
+
   #version-info.version-info
     a.version-info-version href="https://github.com/artyomb/maplibre-preview" target="_blank" v#{MapLibrePreview::VERSION}
 
@@ -137,10 +150,277 @@ javascript:
     let currentProfile = null;
     let contourManager = null;
     let tileGridManager = null;
+    let originalStyle = null;
+    let styleParameterDefinitions = new Map();
+    let styleParameterValues = {};
+    let parameterizedUrlPrefixes = new Set();
 
     const toDomId = (prefix, id) => `${prefix}-${String(id).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
     const noCacheRequestOptions = () => mapCacheDisabled ? {cache: 'no-store'} : undefined;
     const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const PAGE_STYLE_PARAMS = new Set(['style', 'style_url']);
+
+    const normalizeQueryParams = (value) => {
+        if (Array.isArray(value)) return value.map(String).filter(Boolean);
+        if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(Boolean);
+        return [];
+    };
+
+    const inferParameterInputType = (name) => /(^|_|-)(time|date|datetime)($|_|-)/i.test(name) ? 'datetime-local' : 'text';
+
+    const parameterInputToQueryValue = (name, value) => {
+        if (!value) return '';
+        if (inferParameterInputType(name) !== 'datetime-local') return value;
+
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? value : String(Math.floor(parsed.getTime() / 1000));
+    };
+
+    const queryValueToParameterInput = (name, value) => {
+        if (!value || inferParameterInputType(name) !== 'datetime-local') return value || '';
+
+        const parsed = /^\d+$/.test(String(value)) ? new Date(Number(value) * 1000) : new Date(value);
+        if (Number.isNaN(parsed.getTime())) return '';
+
+        const pad = number => String(number).padStart(2, '0');
+        return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+    };
+
+    const styleParameterStorageKey = (name) => `maplibre-preview:style-parameter:${style_url || 'default'}:${name}`;
+
+    const mergeStyleParameterDefinition = (name, sourceName = null) => {
+        if (!name || PAGE_STYLE_PARAMS.has(name)) return;
+
+        const current = styleParameterDefinitions.get(name) || {name, sources: new Set()};
+        sourceName && current.sources.add(sourceName);
+        styleParameterDefinitions.set(name, current);
+    };
+
+    const sourceDeclaredParameters = (sourceDef) => [
+        ...normalizeQueryParams(sourceDef?.query_params),
+        ...normalizeQueryParams(sourceDef?.queryParams)
+    ];
+
+    const urlPrefixFromTemplate = (template) => {
+        if (!template || typeof template !== 'string') return null;
+        const tokenIndex = template.search(/\{[^}]+\}/);
+        const prefix = tokenIndex >= 0 ? template.slice(0, tokenIndex) : template;
+        return prefix ? new URL(prefix, window.location.href).toString() : null;
+    };
+
+    const rememberParameterizedUrl = (template) => {
+        const prefix = urlPrefixFromTemplate(template);
+        prefix && parameterizedUrlPrefixes.add(prefix);
+    };
+
+    const appendStyleParametersToUrl = (resourceUrl, values = styleParameterValues, parameterNames = Object.keys(values)) => {
+        if (!resourceUrl || !parameterNames.length) return resourceUrl;
+
+        const tokens = [];
+        const tokenizedUrl = String(resourceUrl).replace(/\{[^}]+\}/g, match => {
+            const placeholder = `__MLP_TOKEN_${tokens.length}__`;
+            tokens.push([placeholder, match]);
+            return placeholder;
+        });
+        const url = new URL(tokenizedUrl, window.location.href);
+        parameterNames.forEach(name => {
+            const value = values[name];
+            value === undefined || value === null || value === ''
+                ? url.searchParams.delete(name)
+                : url.searchParams.set(name, String(value));
+        });
+        return tokens.reduce((result, [placeholder, token]) => result.replace(placeholder, token), url.toString());
+    };
+
+    const collectStyleSourceParameters = (style) => {
+        Object.entries(style?.sources || {}).forEach(([sourceName, sourceDef]) => {
+            if (sourceName === 'preview-basemap') return;
+
+            const params = sourceDeclaredParameters(sourceDef);
+            params.forEach(name => mergeStyleParameterDefinition(name, sourceName));
+
+            if (params.length) {
+                [sourceDef.url, sourceDef.meta_url, sourceDef.data].forEach(rememberParameterizedUrl);
+                (sourceDef.tiles || []).forEach(rememberParameterizedUrl);
+            }
+        });
+    };
+
+    const fetchSourceMetadata = async (url) => {
+        try {
+            const response = await fetch(appendStyleParametersToUrl(url), noCacheRequestOptions());
+            return response.ok ? response.json() : null;
+        } catch (e) {
+            console.warn('Could not inspect source metadata:', url, e);
+            return null;
+        }
+    };
+
+    const collectSourceMetadataParameters = async (style) => {
+        const entries = Object.entries(style?.sources || {}).filter(([, sourceDef]) => sourceDef?.url || sourceDef?.meta_url);
+
+        await Promise.all(entries.map(async ([sourceName, sourceDef]) => {
+            const metadataUrls = [sourceDef.meta_url];
+            if (sourceDef.type !== 'image') metadataUrls.push(sourceDef.url);
+
+            for (const metadataUrl of metadataUrls.filter(Boolean)) {
+                const metadata = await fetchSourceMetadata(metadataUrl);
+                if (!metadata) continue;
+
+                const params = normalizeQueryParams(metadata.query_params || metadata.queryParams);
+                params.forEach(name => mergeStyleParameterDefinition(name, sourceName));
+                (metadata.tiles || []).forEach(rememberParameterizedUrl);
+            }
+        }));
+    };
+
+    const getInitialStyleParameterValue = (name) => {
+        const pageParams = new URLSearchParams(window.location.search);
+        const urlValue = pageParams.get(name);
+        if (urlValue !== null) return urlValue;
+
+        try {
+            return localStorage.getItem(styleParameterStorageKey(name)) || '';
+        } catch (e) {
+            return '';
+        }
+    };
+
+    const pageProvidedStyleParameterValues = () => {
+        const values = {};
+        new URLSearchParams(window.location.search).forEach((value, key) => {
+            if (!PAGE_STYLE_PARAMS.has(key)) values[key] = value;
+        });
+        return values;
+    };
+
+    const renderStyleParameterControls = () => {
+        const panel = document.getElementById('style-parameters-panel');
+        const fields = document.getElementById('style-parameter-fields');
+        const count = document.getElementById('style-parameters-count');
+        if (!panel || !fields) return;
+
+        const definitions = [...styleParameterDefinitions.values()].sort((a, b) => a.name.localeCompare(b.name));
+        panel.style.display = definitions.length ? 'block' : 'none';
+        count && (count.textContent = String(definitions.length));
+        fields.innerHTML = '';
+
+        definitions.forEach(definition => {
+            const row = document.createElement('label');
+            row.className = 'style-parameter-row';
+            row.htmlFor = `style-param-${definition.name}`;
+
+            const label = document.createElement('span');
+            label.className = 'style-parameter-label';
+            label.textContent = definition.name;
+
+            const input = document.createElement('input');
+            input.className = 'style-parameter-input';
+            input.id = `style-param-${definition.name}`;
+            input.type = inferParameterInputType(definition.name);
+            input.value = queryValueToParameterInput(definition.name, styleParameterValues[definition.name]);
+            input.dataset.parameterName = definition.name;
+            input.title = [...definition.sources].join(', ');
+
+            row.appendChild(label);
+            row.appendChild(input);
+            fields.appendChild(row);
+        });
+
+        layoutBottomOverlays();
+    };
+
+    const toggleStyleParametersPanel = () => {
+        const panel = document.getElementById('style-parameters-panel');
+        const toggle = document.getElementById('style-parameters-toggle');
+        if (!panel) return;
+
+        const isCollapsed = panel.classList.toggle('collapsed');
+        toggle?.setAttribute('aria-expanded', String(!isCollapsed));
+        layoutBottomOverlays();
+    };
+
+    const initializeStyleParameters = async (style) => {
+        styleParameterDefinitions = new Map();
+        styleParameterValues = {};
+        parameterizedUrlPrefixes = new Set();
+
+        collectStyleSourceParameters(style);
+        styleParameterDefinitions.forEach((definition, name) => {
+            styleParameterValues[name] = getInitialStyleParameterValue(name);
+        });
+        await collectSourceMetadataParameters(style);
+
+        styleParameterDefinitions.forEach((definition, name) => {
+            styleParameterValues[name] ??= getInitialStyleParameterValue(name);
+        });
+
+        renderStyleParameterControls();
+    };
+
+    const getSourceParameterNames = (sourceName, sourceDef) => {
+        const names = new Set(sourceDeclaredParameters(sourceDef));
+        styleParameterDefinitions.forEach((definition, name) => {
+            definition.sources.has(sourceName) && names.add(name);
+        });
+        return [...names];
+    };
+
+    const applyStyleParametersToStyle = (style) => {
+        const modifiedStyle = JSON.parse(JSON.stringify(style));
+
+        Object.entries(modifiedStyle.sources || {}).forEach(([sourceName, sourceDef]) => {
+            if (sourceName === 'preview-basemap') return;
+
+            const parameterNames = getSourceParameterNames(sourceName, sourceDef);
+            if (!parameterNames.length) return;
+
+            typeof sourceDef.url === 'string' && (sourceDef.url = appendStyleParametersToUrl(sourceDef.url, styleParameterValues, parameterNames));
+            typeof sourceDef.meta_url === 'string' && (sourceDef.meta_url = appendStyleParametersToUrl(sourceDef.meta_url, styleParameterValues, parameterNames));
+            typeof sourceDef.data === 'string' && (sourceDef.data = appendStyleParametersToUrl(sourceDef.data, styleParameterValues, parameterNames));
+            Array.isArray(sourceDef.tiles) && (sourceDef.tiles = sourceDef.tiles.map(tileUrl => appendStyleParametersToUrl(tileUrl, styleParameterValues, parameterNames)));
+        });
+
+        return modifiedStyle;
+    };
+
+    const shouldPatchRequestUrl = (resourceUrl) => {
+        if (!Object.values(styleParameterValues).some(value => value !== undefined && value !== null && value !== '')) return false;
+        const absolute = new URL(resourceUrl, window.location.href).toString();
+        return absolute.includes('/rb_tiles/') || [...parameterizedUrlPrefixes].some(prefix => absolute.startsWith(prefix));
+    };
+
+    const patchRequestUrl = (resourceUrl) => shouldPatchRequestUrl(resourceUrl) ? appendStyleParametersToUrl(resourceUrl) : resourceUrl;
+
+    const BOTTOM_OVERLAY_IDS = ['style-parameters-panel', 'loading-indicator', 'profile-overlay'];
+    const BOTTOM_OVERLAY_BASE_OFFSET = 20;
+    const BOTTOM_OVERLAY_GAP = 12;
+
+    const isVisibleBottomOverlay = (element) => {
+        if (!element) return false;
+
+        const style = window.getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
+    };
+
+    const layoutBottomOverlays = () => {
+        window.requestAnimationFrame(() => {
+            let bottomOffset = BOTTOM_OVERLAY_BASE_OFFSET;
+
+            BOTTOM_OVERLAY_IDS.forEach(id => {
+                const element = document.getElementById(id);
+                if (!element) return;
+
+                if (!isVisibleBottomOverlay(element)) {
+                    element.style.bottom = '';
+                    return;
+                }
+
+                element.style.bottom = `${bottomOffset}px`;
+                bottomOffset += element.offsetHeight + BOTTOM_OVERLAY_GAP;
+            });
+        });
+    };
 
     const getRealTerrainElevation = (lngLat) => {
         const elevation = map.queryTerrainElevation(lngLat);
@@ -150,8 +430,15 @@ javascript:
         return elevation / exaggeration;
     };
 
-    const showLoading = () => document.getElementById('loading-indicator').style.display = 'block';
-    const hideLoading = () => document.getElementById('loading-indicator').style.display = 'none';
+    const showLoading = () => {
+        document.getElementById('loading-indicator').style.display = 'block';
+        layoutBottomOverlays();
+    };
+
+    const hideLoading = () => {
+        document.getElementById('loading-indicator').style.display = 'none';
+        layoutBottomOverlays();
+    };
 
     const updateLoadingProgress = () => {
         let progress = 0;
@@ -256,7 +543,7 @@ javascript:
             canvasContextAttributes: {antialias: antialiasEnabled},
             fadeDuration: tileFadeEnabled ? 300 : 0,
             transformRequest: (url) => ({
-                url,
+                url: patchRequestUrl(url),
                 ...noCacheRequestOptions()
             })
         });
@@ -306,19 +593,21 @@ javascript:
         popup.setLngLat(e.lngLat).setHTML(tooltips.join('<br>')).addTo(map);
     };
 
-    const initializeMap = () => {
+    const initializeMap = async () => {
         showLoading();
         const emptyStyle = {version: 8, sources: {}, layers: []};
 
-        style_url
-            ? fetch(style_url, noCacheRequestOptions())
-                .then(response => response.json())
-                .then(originalStyle => createMapWithStyle(addBasemapToStyle(originalStyle)))
-                .catch(error => {
-                    console.error('Style loading error:', error);
-                    createMapWithStyle(addBasemapToStyle(emptyStyle));
-                })
-            : createMapWithStyle(addBasemapToStyle(emptyStyle));
+        try {
+            originalStyle = style_url
+                ? await fetch(appendStyleParametersToUrl(style_url, pageProvidedStyleParameterValues(), Object.keys(pageProvidedStyleParameterValues())), noCacheRequestOptions()).then(response => response.json())
+                : emptyStyle;
+        } catch (error) {
+            console.error('Style loading error:', error);
+            originalStyle = emptyStyle;
+        }
+
+        await initializeStyleParameters(originalStyle);
+        createMapWithStyle(addBasemapToStyle(applyStyleParametersToStyle(originalStyle)));
     };
 
     const createMapWithStyle = (style) => {
@@ -659,6 +948,7 @@ javascript:
         [header, stats, chart].forEach(el => overlay.appendChild(el));
         document.getElementById('map-container').appendChild(overlay);
         setTimeout(() => drawSimpleProfileChart(profile), 10);
+        layoutBottomOverlays();
     };
 
     const drawSimpleProfileChart = (profile) => {
@@ -736,6 +1026,7 @@ javascript:
 
     const hideProfile = () => {
         document.getElementById('profile-overlay')?.remove();
+        layoutBottomOverlays();
         map.getLayer('profile-line') && (map.removeLayer('profile-line'), map.removeSource('profile-line'));
         map.getLayer('temporary-line') && (map.removeLayer('temporary-line'), map.removeSource('temporary-line'));
         hideMapMarker();
@@ -1078,6 +1369,88 @@ javascript:
         updateTileFadeButton();
     };
 
+    const syncStyleParameterUrlState = () => {
+        const url = new URL(window.location.href);
+        Object.entries(styleParameterValues).forEach(([name, value]) => {
+            value === undefined || value === null || value === ''
+                ? url.searchParams.delete(name)
+                : url.searchParams.set(name, String(value));
+        });
+        window.history.replaceState({}, '', url.toString());
+    };
+
+    const readStyleParameterFormValues = () => {
+        document.querySelectorAll('.style-parameter-input').forEach(input => {
+            const name = input.dataset.parameterName;
+            if (!name) return;
+            styleParameterValues[name] = parameterInputToQueryValue(name, input.value);
+
+            try {
+                styleParameterValues[name]
+                    ? localStorage.setItem(styleParameterStorageKey(name), styleParameterValues[name])
+                    : localStorage.removeItem(styleParameterStorageKey(name));
+            } catch (e) {
+                console.warn('Could not persist style parameter:', name, e);
+            }
+        });
+    };
+
+    const resetRuntimeStateBeforeReload = () => {
+        stopPerformanceMonitoring();
+        tileGridManager?.cleanup();
+        contourManager?.cleanup();
+        document.getElementById('filter-buttons') && (document.getElementById('filter-buttons').innerHTML = '');
+        document.getElementById('layer-buttons') && (document.getElementById('layer-buttons').innerHTML = '');
+        Object.keys(layerStates).forEach(key => delete layerStates[key]);
+        Object.keys(layerIdToDomId).forEach(key => delete layerIdToDomId[key]);
+        filters = null;
+        contourManager = null;
+        tileGridManager = null;
+        window.tileGridManager = null;
+        currentStyle = null;
+        styleLoaded = false;
+        resourcesLoaded = 0;
+        totalResources = 0;
+        tilesLoaded = 0;
+        tilesTotal = 0;
+        profilePoints = [];
+        currentProfile = null;
+        profileLine = null;
+        hideProfile();
+        hideElevationTooltip();
+    };
+
+    const reloadStyleWithParameters = () => {
+        if (!originalStyle) return;
+
+        showLoading();
+        resetRuntimeStateBeforeReload();
+        map?.remove();
+        map = null;
+        createMapWithStyle(addBasemapToStyle(applyStyleParametersToStyle(originalStyle)));
+    };
+
+    const applyStyleParameters = () => {
+        readStyleParameterFormValues();
+        syncStyleParameterUrlState();
+        renderStyleParameterControls();
+        reloadStyleWithParameters();
+    };
+
+    const resetStyleParameters = () => {
+        Object.keys(styleParameterValues).forEach(name => {
+            styleParameterValues[name] = '';
+            try {
+                localStorage.removeItem(styleParameterStorageKey(name));
+            } catch (e) {
+                console.warn('Could not clear style parameter:', name, e);
+            }
+        });
+        syncStyleParameterUrlState();
+        renderStyleParameterControls();
+        reloadStyleWithParameters();
+    };
+
     const toggleControlSection = (sectionName) => {
         const wrapper = document.getElementById(`${sectionName}-wrapper`);
         const section = document.getElementById(`${sectionName}-section`);
@@ -1108,10 +1481,14 @@ javascript:
     window.toggleCollisionBoxes = toggleCollisionBoxes;
     window.toggleOverdrawInspector = toggleOverdrawInspector;
     window.toggleTileFade = toggleTileFade;
+    window.applyStyleParameters = applyStyleParameters;
+    window.resetStyleParameters = resetStyleParameters;
+    window.toggleStyleParametersPanel = toggleStyleParametersPanel;
     window.toggleControlSection = toggleControlSection;
     window.toggleLayerControls = () => toggleControlSection('style-controls');
     window.hideProfile = hideProfile;
     window.toggleTileGrid = toggleTileGrid;
     window.tileGridManager = null;
+    window.addEventListener('resize', layoutBottomOverlays);
 
     initializeMap();

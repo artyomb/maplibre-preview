@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.7.0] - 2026-05-14
+
+### Added
+- **Style source parameters** - detect `query_params` / `queryParams` from style sources and source metadata
+- **Style parameters panel** - add a bottom-center collapsible panel for passing detected parameters into style, source, tile, data, and metadata URLs
+- **Date/time parameter inputs** - render date/time-like parameters as `datetime-local` fields and send them as epoch seconds
+
+### Changed
+- **Overlay layout** - stack bottom overlays so Style Parameters, Loading, and Elevation Profile panels do not cover each other
+- **Style parameter state** - persist parameter values per style URL and keep applied values in the page query string
+
 ## [1.6.0] - 2026-05-13
 
 ### Added

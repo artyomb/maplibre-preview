@@ -33,9 +33,19 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('id="collision-boxes-btn"')
       expect(last_response.body).to include('id="overdraw-inspector-btn"')
       expect(last_response.body).to include('id="tile-fade-btn"')
+      expect(last_response.body).to include('id="style-parameters-panel"')
+      expect(last_response.body).to include('id="style-parameters-toggle"')
+      expect(last_response.body).to include('id="style-parameter-fields"')
+      expect(last_response.body).to include('id="style-parameters-apply"')
+      expect(last_response.body).to include('id="style-parameters-reset"')
       expect(last_response.body).to include('mapCacheDisabled')
       expect(last_response.body).to include('basemapOpacity')
       expect(last_response.body).to include('terrainExaggeration')
+      expect(last_response.body).to include('styleParameterDefinitions')
+      expect(last_response.body).to include('sourceDeclaredParameters')
+      expect(last_response.body).to include('collectSourceMetadataParameters')
+      expect(last_response.body).to include('applyStyleParametersToStyle')
+      expect(last_response.body).to include('layoutBottomOverlays')
       expect(last_response.body).to include('showCollisionBoxes')
       expect(last_response.body).to include('showOverdrawInspector')
       expect(last_response.body).to include("cache: 'no-store'")
@@ -45,6 +55,8 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('raster-fade-duration')
       expect(last_response.body).to include('window.toggleMapCache')
       expect(last_response.body).to include('window.switchSettingsMode')
+      expect(last_response.body).to include('window.applyStyleParameters')
+      expect(last_response.body).to include('window.toggleStyleParametersPanel')
     end
 
     it 'serves all required JavaScript modules' do
