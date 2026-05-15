@@ -774,20 +774,39 @@ javascript:
         return modifiedStyle;
     };
 
-    const popupFeature = (features, e, popup) => {
-        const tt = (tooltip, feat) => tooltip?.replace(/\{([^}]+)\}/g, (match, prop) => {
-            let value = feat;
-            for (const p of prop.split('.')) {
-                value = value?.[p];
-            }
-            return typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '');
-        });
+    const tooltipValue = (feat, prop) => {
+        let value = feat;
+        for (const p of prop.split('.')) {
+            value = value?.[p];
+        }
+        return typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '');
+    };
 
+    const tooltipText = (tooltip, feat) => tooltip?.replace(/\{([^}]+)\}/g, (match, prop) => tooltipValue(feat, prop));
+
+    const defaultTooltipText = (feat) => [
+        `"id": ${tooltipValue(feat, 'id')}`,
+        `"source": ${tooltipValue(feat, 'source')}`,
+        `"source-layer": ${tooltipValue(feat, 'sourceLayer')}`,
+        `"properties": ${tooltipValue(feat, 'properties')}`
+    ].join('\n');
+
+    const createPopupContent = (tooltips) => {
+        const fragment = document.createDocumentFragment();
+        tooltips.forEach((tooltip, index) => {
+            if (index > 0) fragment.appendChild(document.createElement('br'));
+            const item = document.createElement('pre');
+            item.textContent = tooltip;
+            fragment.appendChild(item);
+        });
+        return fragment;
+    };
+
+    const popupFeature = (features, e, popup) => {
         const tooltips = features.map((feat) =>
-            tt(feat.layer.metadata?.tooltip, feat) ||
-            tt(`<pre>"id": {id},\n"source": {source},\n"source-layer": {sourceLayer},\n"properties": {properties}</pre>`, feat)
+            tooltipText(feat.layer.metadata?.tooltip, feat) || defaultTooltipText(feat)
         );
-        popup.setLngLat(e.lngLat).setHTML(tooltips.join('<br>')).addTo(map);
+        popup.setLngLat(e.lngLat).setDOMContent(createPopupContent(tooltips)).addTo(map);
     };
 
     const initializeMap = async () => {

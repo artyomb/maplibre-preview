@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.9.1] - 2026-05-15
+
+### Security
+- **Feature popup tooltips** - render style and feature tooltip values as DOM text instead of raw HTML to prevent script execution from untrusted style or tile data
+
 ## [1.9.0] - 2026-05-14
 
 ### Added

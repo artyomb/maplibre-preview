@@ -81,6 +81,16 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('window.toggleStyleParametersPanel')
     end
 
+    it 'renders feature popup tooltips as DOM text instead of raw HTML' do
+      get '/?style_url=https://example.com/style.json'
+      expect(last_response).to be_ok
+
+      expect(last_response.body).to include('createPopupContent')
+      expect(last_response.body).to include('item.textContent = tooltip')
+      expect(last_response.body).to include('setDOMContent(createPopupContent(tooltips))')
+      expect(last_response.body).not_to include('setHTML(tooltips')
+    end
+
     it 'serves all required JavaScript modules' do
       %w[/js/overlay_layout.js /js/filters.js /js/contour.js /js/tilegrid.js /js/temporal_picker.js /vendor/maplibre-gl/maplibre-gl.js /vendor/maplibre-contour/index.min.js /vendor/d3/d3.v7.min.js].each do |js_file|
         get js_file
