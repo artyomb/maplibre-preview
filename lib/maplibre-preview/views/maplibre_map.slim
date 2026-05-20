@@ -809,6 +809,17 @@ javascript:
         popup.setLngLat(e.lngLat).setDOMContent(createPopupContent(tooltips)).addTo(map);
     };
 
+    const emitCoordinateSelection = (lngLat) => {
+        const payload = {
+            type: 'maplibre-preview:coordinate-selected',
+            lat: lngLat.lat,
+            lon: lngLat.lng
+        };
+
+        window.dispatchEvent(new CustomEvent(payload.type, {detail: payload}));
+        window.parent !== window && window.parent.postMessage(payload, window.location.origin);
+    };
+
     const initializeMap = async () => {
         showLoading();
         const emptyStyle = {version: 8, sources: {}, layers: []};
@@ -918,6 +929,8 @@ javascript:
         const popup = new maplibregl.Popup({closeButton: false, closeOnClick: false});
 
         map.on('click', function (e) {
+            emitCoordinateSelection(e.lngLat);
+
             if (profileMode) {
                 handleProfileClick(e);
                 return;

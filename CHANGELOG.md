@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0] - 2026-05-20
+
+### Added
+- **Host coordinate selection** - emit `maplibre-preview:coordinate-selected` with `lat` and `lon` on map clicks for embedded host applications
+
+### Changed
+- **Embedded preview route** - pass configured preview options into the `/maplibre_preview` template route
+
 ## [1.9.1] - 2026-05-15
 
 ### Security

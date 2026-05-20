@@ -15,6 +15,7 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('maplibre-contour')
       expect(last_response.body).to include('d3')
       expect(last_response.body).to include('overlay_layout')
+      expect(last_response.body).to include('maplibre-preview:coordinate-selected')
     end
 
     it 'renders map cache toggle wiring' do
@@ -89,6 +90,14 @@ RSpec.describe MapLibrePreview do
       expect(last_response.body).to include('item.textContent = tooltip')
       expect(last_response.body).to include('setDOMContent(createPopupContent(tooltips))')
       expect(last_response.body).not_to include('setHTML(tooltips')
+    end
+
+    it 'emits selected coordinates for host applications' do
+      get '/'
+      expect(last_response).to be_ok
+
+      expect(last_response.body).to include('emitCoordinateSelection(e.lngLat)')
+      expect(last_response.body).to include('window.parent.postMessage(payload, window.location.origin)')
     end
 
     it 'serves all required JavaScript modules' do

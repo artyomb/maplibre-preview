@@ -33,7 +33,7 @@ module MapLibrePreview
       app.set :maplibre_preview_options, {}
 
       app.get '/maplibre_preview' do
-        slim :maplibre_map, layout: :maplibre_layout
+        slim :maplibre_map, layout: :maplibre_layout, locals: { options: settings.maplibre_preview_options }
       end
     end
   end
